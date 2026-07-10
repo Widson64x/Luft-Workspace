@@ -8,7 +8,6 @@ from App import CriarApp
 
 app = CriarApp()
 
-
 if __name__ == "__main__":
     host = os.getenv("HOST", "127.0.0.1")
     porta = int(os.getenv("PORT", "9000"))
