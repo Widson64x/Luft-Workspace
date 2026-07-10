@@ -1,0 +1,6 @@
+{% extends "Layout/BaseLayout.html" %}
+
+{% block extra_head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/Admin/Admin.css') }}">
+{% endblock %}

@@ -1,0 +1,55 @@
+{% extends "luftcore/base.html" %}
+{% import 'luftcore/components.html' as ui %}
+
+{% block titulo %}
+{% block title %}Luft Hub{% endblock %}
+{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/Hub.css') }}">
+{% endblock %}
+
+{% block sidebar_menu %}
+{% set endpoint_atual = request.endpoint or '' %}
+
+{% set hub_ativo = endpoint_atual == 'Principal.MenuPrincipal' %}
+{% set configuracoes_ativo = endpoint_atual in ['Principal.ConfiguracoesHub', 'Principal.PainelSistemas'] %}
+
+{% call ui.nav_item('Hub de Sistemas', icone='ph-bold ph-squares-four', ativo=hub_ativo) %}
+{{ ui.nav_item('Visão Geral', icone='ph-bold ph-house', href=url_for('Principal.MenuPrincipal'), ativo=(endpoint_atual == 'Principal.MenuPrincipal')) }}
+{% for sistema in SistemasMenu %}
+    {% if sistema.link and not sistema.emManutencao %}
+{{ ui.nav_item(sistema.nomeSistema, icone=(sistema.icone or 'ph-bold ph-app-window'), href=sistema.link, ativo=False) }}
+    {% else %}
+{{ ui.nav_item(sistema.nomeSistema ~ ' (indisponível)', icone='ph-bold ph-lock-key', href=url_for('Principal.MenuPrincipal'), ativo=False) }}
+    {% endif %}
+{% endfor %}
+{% endcall %}
+
+{% call ui.nav_item('Configurações', icone='ph-bold ph-sliders-horizontal', ativo=configuracoes_ativo) %}
+{{ ui.nav_item('Painel de Configurações', icone='ph-bold ph-sliders-horizontal', href=url_for('Principal.ConfiguracoesHub'), ativo=(endpoint_atual == 'Principal.ConfiguracoesHub')) }}
+{% if PodeAdministrarHub %}
+{{ ui.nav_item('Administrar Sistemas', icone='ph-bold ph-app-window', href=url_for('Principal.PainelSistemas'), ativo=(endpoint_atual == 'Principal.PainelSistemas')) }}
+{% endif %}
+{% endcall %}
+{% endblock %}
+
+{% block sidebar_actions %}
+<button onclick="LuftCore.alternarTema()" class="luft-btn-action hover-lift" title="Alternar tema">
+    <i class="ph-bold ph-moon"></i>
+</button>
+<a href="{{ url_for('Principal.ConfiguracoesHub') }}" class="luft-btn-action hover-lift" title="Configurações">
+    <i class="ph-bold ph-sliders-horizontal"></i>
+</a>
+<a href="{{ url_for('Autenticacao.logout') }}" class="luft-btn-action hover-lift text-danger" title="Sair">
+    <i class="ph-bold ph-power"></i>
+</a>
+{% endblock %}
+
+{% block nome_usuario %}
+{{ current_user.nome if current_user.is_authenticated else 'Visitante' }}
+{% endblock %}
+
+{% block content %}
+{% block page_content %}{% endblock %}
+{% endblock %}

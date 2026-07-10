@@ -1,0 +1,37 @@
+{
+    "workbench.colorCustomizations": {
+        "[Vira*]": {
+            "toolbar.activeBackground": "#1c1c1c",
+            "activityBarBadge.background": "#333333",
+            "activityBar.activeBorder": "#444444",
+            "activityBarTop.activeBorder": "#444444",
+            "list.inactiveSelectionIconForeground": "#888888",
+            "list.activeSelectionForeground": "#ffffff",
+            "list.inactiveSelectionForeground": "#888888",
+            "list.highlightForeground": "#aaaaaa",
+            "sash.hoverBorder": "#444444",
+            "list.activeSelectionIconForeground": "#ffffff",
+            "scrollbarSlider.activeBackground": "#444444",
+            "editorSuggestWidget.highlightForeground": "#ffffff",
+            "textLink.foreground": "#ffffff",
+            "progressBar.background": "#666666",
+            "pickerGroup.foreground": "#ffffff",
+            "tab.activeBorder": "#444444",
+            "notificationLink.foreground": "#ffffff",
+            "editorWidget.resizeBorder": "#444444",
+            "editorWidget.border": "#444444",
+            "settings.modifiedItemIndicator": "#444444",
+            "panelTitle.activeBorder": "#444444",
+            "breadcrumb.activeSelectionForeground": "#ffffff",
+            "menu.selectionForeground": "#ffffff",
+            "menubar.selectionForeground": "#ffffff",
+            "editor.findMatchBorder": "#444444",
+            "selection.background": "#33333350",
+            "statusBarItem.remoteBackground": "#444444",
+            "notebook.inactiveFocusedCellBorder": "#444444",
+            "commandCenter.activeBorder": "#444444"
+        },
+        "minimap.background": "#00000000",
+        "scrollbar.shadow": "#00000000"
+    }
+}

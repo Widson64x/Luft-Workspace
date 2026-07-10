@@ -1,0 +1,38 @@
+{% extends "Layout/AdminBaseLayout.html" %}
+{% block title %}Configurações do Hub{% endblock %}
+
+{% block page_content %}
+<section class="hub-pagina">
+<div class="hub-cabecalho hub-reveal-up">
+	<h1>Configurações do Hub</h1>
+	<p>Visualize apenas os módulos para os quais o seu perfil possui permissão ativa.</p>
+</div>
+
+{% if modulosPermitidos %}
+<section class="hub-grid-configuracoes">
+	{% for modulo in modulosPermitidos %}
+	<article class="hub-card-configuracao hub-reveal-up" style="animation-delay: {{ modulo.delayMs }}ms;">
+		<div class="hub-card-config-topo">
+			<div class="hub-cartao-icone">
+				<i class="{{ modulo.icone }}"></i>
+			</div>
+			<span class="hub-badge {{ modulo.badgeClasse }}">{{ modulo.status }}</span>
+		</div>
+		<h3>{{ modulo.nome }}</h3>
+		<p>{{ modulo.descricao }}</p>
+		{% if modulo.status == 'Em breve' %}
+		<button class="hub-botao-acessar hub-botao-desabilitado" type="button" disabled>Indisponível</button>
+		{% else %}
+		<a class="hub-botao-acessar" href="{{ modulo.href }}">{{ modulo.acao }}</a>
+		{% endif %}
+	</article>
+	{% endfor %}
+</section>
+{% else %}
+<section class="hub-vazio hub-reveal-up">
+	<h3>Sem módulos disponíveis</h3>
+	<p>Seu perfil não possui permissões para visualizar funcionalidades de configuração.</p>
+</section>
+{% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,46 @@
+{% extends "Layout/BaseLayout.html" %}
+
+{% block title %}Hub Central{% endblock %}
+
+{% block page_content %}
+<section class="hub-pagina">
+<div class="hub-cabecalho hub-reveal-up">
+    <h1>Hub Central Luft</h1>
+    <p>Acesse os sistemas disponiveis para o seu perfil e acompanhe o status operacional de cada aplicacao.</p>
+</div>
+
+<div class="hub-grid-cartoes">
+    {% for sistema in sistemas %}
+    <article class="hub-cartao-sistema hub-reveal-up {% if sistema.emManutencao %}hub-cartao-manutencao{% endif %}" style="animation-delay: {{ loop.index0 * 65 }}ms;">
+        <div class="hub-cartao-topo">
+            <div class="hub-cartao-icone">
+                <i class="{{ sistema.icone or 'ph-bold ph-app-window' }}"></i>
+            </div>
+            <span class="hub-badge {{ 'hub-badge-alerta' if sistema.emManutencao else 'hub-badge-ok' }}">
+                {{ 'Em manutencao' if sistema.emManutencao else 'Operacional' }}
+            </span>
+        </div>
+        <h3>{{ sistema.nomeSistema }}</h3>
+        <p>{{ sistema.descricaoSistema or 'Sem descricao cadastrada.' }}</p>
+
+        {% if sistema.link and not sistema.emManutencao %}
+        <a class="hub-botao-acessar" href="{{ sistema.link }}" target="_blank" rel="noopener noreferrer">
+            Abrir sistema
+        </a>
+        {% else %}
+        <button class="hub-botao-acessar hub-botao-desabilitado" disabled>
+            {{ 'Indisponivel durante manutencao' if sistema.emManutencao else 'Link nao configurado' }}
+        </button>
+        {% endif %}
+    </article>
+    {% endfor %}
+</div>
+
+{% if sistemas|length == 0 %}
+<section class="hub-vazio hub-reveal-up">
+    <h3>Nenhum sistema disponivel</h3>
+    <p>Seu usuario ainda nao possui acesso a sistemas ativos no Hub.</p>
+</section>
+{% endif %}
+</section>
+{% endblock %}

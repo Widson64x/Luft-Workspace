@@ -1,0 +1,570 @@
+{% extends "Layout/AdminBaseLayout.html" %}
+{% import 'luftcore/components.html' as ui %}
+
+{% block title %}Operações de Ambiente{% endblock %}
+
+{% block page_content %}
+<section class="hub-pagina">
+	<div id="operacoesAmbienteDados" data-projetos="{{ projetosOperacao | tojson | forceescape }}" hidden></div>
+	<div class="hub-cabecalho hub-reveal-up">
+		<h1>Operações de Ambiente</h1>
+		<p>Gestão operacional centralizada com edição segura por modal e controle de ciclo de vida dos serviços.</p>
+	</div>
+
+	<section class="hub-admin-hero hub-reveal-up" style="animation-delay: 40ms;">
+		<div class="hub-admin-kpis hub-admin-kpis-compactos">
+			<article class="hub-admin-kpi">
+				<span>Projetos</span>
+				<strong>{{ projetosOperacao|length }}</strong>
+				<small>Mapeados para operação</small>
+			</article>
+			<article class="hub-admin-kpi">
+				<span>Serviços</span>
+				<strong>{{ servicosOperacao|length }}</strong>
+				<small>Comandos de ciclo de vida</small>
+			</article>
+		</div>
+	</section>
+
+	<section class="hub-operacoes-abas hub-reveal-up" style="animation-delay: 80ms;" aria-label="Seções de Operações">
+		<header class="hub-operacoes-abas-topo">
+			<h3>Seções Operacionais</h3>
+			<div class="hub-operacoes-abas-acoes" role="tablist" aria-label="Alternar seção">
+				<button type="button" class="hub-aba-btn ativo" id="btnAbaVariaveis" data-aba="variaveis" role="tab" aria-selected="true" aria-controls="painelVariaveisOperacao">Variáveis</button>
+				<button type="button" class="hub-aba-btn" id="btnAbaServicos" data-aba="servicos" role="tab" aria-selected="false" aria-controls="painelServicosOperacao">Serviços</button>
+			</div>
+		</header>
+
+		<section class="hub-operacoes-abas-conteudo">
+			<article class="hub-operacoes-secao-unica" id="painelVariaveisOperacao" role="tabpanel" aria-labelledby="btnAbaVariaveis">
+				<header class="hub-admin-grade-header hub-operacoes-secao-topo">
+					<div>
+						<h3>Variáveis</h3>
+						<p>Whitelisted por projeto com edição segura</p>
+					</div>
+					<button type="button" class="btn btn-sm btn-outline" id="btnAtualizarVariaveis">Recarregar</button>
+				</header>
+
+				<div class="hub-operacoes-secao-corpo">
+					<section class="hub-operacoes-secao" aria-label="Filtros de variáveis">
+						<div class="hub-operacoes-filtros-linha">
+							<div class="hub-operacoes-filtro-item">
+								<label for="projetoOperacaoSelect">Projeto</label>
+								<select id="projetoOperacaoSelect" class="form-control">
+									{% for projeto in projetosOperacao %}
+									<option value="{{ projeto.idProjeto }}">{{ projeto.nomeProjeto }}</option>
+									{% endfor %}
+								</select>
+							</div>
+							<div class="hub-operacoes-filtro-item">
+								<label for="filtroVariavelOperacao">Buscar chave</label>
+								<input id="filtroVariavelOperacao" class="form-control" type="text" placeholder="Ex.: SESSION_COOKIE_NAME">
+							</div>
+						</div>
+
+						<small class="hub-operacoes-resumo" id="resumoProjetoOperacao">Selecione um projeto para visualizar caminho e virtualenv.</small>
+					</section>
+
+					<section class="hub-operacoes-secao hub-operacoes-secao-tabela" aria-label="Tabela de variáveis permitidas">
+						<div class="hub-admin-tabela-wrapper hub-tabela-compacta">
+							<table class="hub-admin-tabela" id="tabelaVariaveisOperacao">
+								<thead>
+									<tr>
+										<th>Chave</th>
+										<th>Valor</th>
+										<th class="hub-coluna-acoes">Ação</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr>
+										<td colspan="3">Selecione um projeto para carregar as variáveis.</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+			</article>
+
+			<article class="hub-operacoes-secao-unica hub-oculto" id="painelServicosOperacao" role="tabpanel" aria-labelledby="btnAbaServicos">
+				<header class="hub-admin-grade-header hub-operacoes-secao-topo">
+					<div>
+						<h3>Serviços</h3>
+						<p>Gestão operacional por modal e status em tempo real</p>
+					</div>
+					<button type="button" class="btn btn-sm btn-outline" id="btnAtualizarServicos">Atualizar Status</button>
+				</header>
+
+				<div class="hub-operacoes-secao-corpo">
+					<section class="hub-operacoes-secao hub-operacoes-secao-tabela" aria-label="Tabela de serviços do servidor">
+						<div class="hub-admin-tabela-wrapper hub-tabela-compacta">
+							<table class="hub-admin-tabela" id="tabelaServicosOperacao">
+								<thead>
+									<tr>
+										<th>Serviço</th>
+										<th>Status</th>
+										<th class="hub-coluna-acoes">Ação</th>
+									</tr>
+								</thead>
+								<tbody>
+									{% for servico in servicosOperacao %}
+									<tr data-id-servico="{{ servico.idServico }}">
+										<td>
+											<strong>{{ servico.nomeExibicao }}</strong>
+											<small>{{ servico.nomeServico or '-' }}</small>
+										</td>
+										<td>
+											{% if servico.status == 'RUNNING' %}
+											<span class="hub-badge hub-badge-ok">RUNNING</span>
+											{% elif servico.status in ['STOPPED', 'NAO_CONFIGURADO', 'NAO_ENCONTRADO'] %}
+											<span class="hub-badge hub-badge-alerta">{{ servico.status }}</span>
+											{% else %}
+											<span class="hub-badge">{{ servico.status }}</span>
+											{% endif %}
+										</td>
+										<td class="hub-coluna-acoes">
+											<button type="button" class="btn btn-sm btn-primary js-gerenciar-servico">Gerenciar</button>
+										</td>
+									</tr>
+									{% endfor %}
+								</tbody>
+							</table>
+						</div>
+					</section>
+				</div>
+			</article>
+		</section>
+	</section>
+
+	{% call ui.modal('modalEditarVariavelOperacao', 'Editar Variável de Ambiente', tamanho='lg', icone='ph-bold ph-sliders-horizontal') %}
+	<div class="hub-operacoes-modal">
+		<div class="hub-campo-linha">
+			<label for="modalProjetoVariavel">Projeto</label>
+			<input id="modalProjetoVariavel" class="form-control" type="text" readonly>
+		</div>
+		<div class="hub-campo-linha">
+			<label for="modalChaveVariavel">Chave</label>
+			<input id="modalChaveVariavel" class="form-control" type="text" readonly>
+		</div>
+		<div class="hub-campo-linha">
+			<label for="modalDescricaoVariavel">Descrição</label>
+			<input id="modalDescricaoVariavel" class="form-control" type="text" readonly>
+		</div>
+		<div class="hub-campo-linha">
+			<label for="modalValorVariavel">Valor</label>
+			<textarea id="modalValorVariavel" class="form-control" rows="4" placeholder="Informe o novo valor"></textarea>
+		</div>
+		<div class="hub-modal-acoes">
+			<button type="button" class="btn btn-outline" onclick="LuftCore.fecharModal('modalEditarVariavelOperacao')">Cancelar</button>
+			<button type="button" class="btn btn-primary" id="btnSalvarVariavelModal">Salvar</button>
+		</div>
+	</div>
+	{% endcall %}
+
+	{% call ui.modal('modalGerenciarServicoOperacao', 'Gerenciar Serviço', tamanho='lg', icone='ph-bold ph-gear-six') %}
+	<div class="hub-operacoes-modal">
+		<div class="hub-operacoes-servico-cabecalho">
+			<h4 id="modalTituloServico">Serviço</h4>
+			<span class="hub-badge" id="modalStatusServico">DESCONHECIDO</span>
+		</div>
+		<p id="modalDescricaoServico" class="hub-operacoes-resumo"></p>
+		<div class="hub-campo-linha">
+			<label for="modalNomeTecnicoServico">Nome técnico</label>
+			<input id="modalNomeTecnicoServico" class="form-control" type="text" readonly>
+		</div>
+		<div class="hub-modal-acoes">
+			<button type="button" class="btn btn-outline js-acao-servico-modal" data-acao="iniciar">Iniciar</button>
+			<button type="button" class="btn btn-outline js-acao-servico-modal" data-acao="parar">Parar</button>
+			<button type="button" class="btn btn-primary js-acao-servico-modal" data-acao="reiniciar">Reiniciar</button>
+		</div>
+		<div class="hub-campo-linha">
+			<label for="modalSaidaServico">Saída operacional</label>
+			<textarea id="modalSaidaServico" class="form-control" rows="5" readonly placeholder="Aguardando ação..."></textarea>
+		</div>
+	</div>
+	{% endcall %}
+</section>
+
+<script>
+(function InicializarOperacoesAmbiente() {
+	const seletorProjeto = document.getElementById('projetoOperacaoSelect');
+	const filtroVariavel = document.getElementById('filtroVariavelOperacao');
+	const tabelaVariaveis = document.getElementById('tabelaVariaveisOperacao');
+	const tabelaServicos = document.getElementById('tabelaServicosOperacao');
+	const resumoProjetoOperacao = document.getElementById('resumoProjetoOperacao');
+	const btnSalvarVariavelModal = document.getElementById('btnSalvarVariavelModal');
+	const modalProjetoVariavel = document.getElementById('modalProjetoVariavel');
+	const modalChaveVariavel = document.getElementById('modalChaveVariavel');
+	const modalDescricaoVariavel = document.getElementById('modalDescricaoVariavel');
+	const modalValorVariavel = document.getElementById('modalValorVariavel');
+
+	const modalTituloServico = document.getElementById('modalTituloServico');
+	const modalStatusServico = document.getElementById('modalStatusServico');
+	const modalDescricaoServico = document.getElementById('modalDescricaoServico');
+	const modalNomeTecnicoServico = document.getElementById('modalNomeTecnicoServico');
+	const modalSaidaServico = document.getElementById('modalSaidaServico');
+	const btnAtualizarVariaveis = document.getElementById('btnAtualizarVariaveis');
+	const btnAtualizarServicos = document.getElementById('btnAtualizarServicos');
+	const btnAbaVariaveis = document.getElementById('btnAbaVariaveis');
+	const btnAbaServicos = document.getElementById('btnAbaServicos');
+	const painelVariaveisOperacao = document.getElementById('painelVariaveisOperacao');
+	const painelServicosOperacao = document.getElementById('painelServicosOperacao');
+
+	const urlListarVariaveis = "{{ url_for('Principal.ApiListarVariaveisProjetoOperacoesAmbiente') }}";
+	const urlSalvarVariavel = "{{ url_for('Principal.ApiSalvarVariavelProjetoOperacoesAmbiente') }}";
+	const urlListarServicos = "{{ url_for('Principal.ApiListarServicosOperacoesAmbiente') }}";
+	const urlAcaoServico = "{{ url_for('Principal.ApiExecutarAcaoServicoOperacoesAmbiente') }}";
+
+	const dadosOperacoes = document.getElementById('operacoesAmbienteDados');
+	const projetosCatalogo = (() => {
+		try {
+			const bruto = dadosOperacoes?.dataset?.projetos || '[]';
+			return JSON.parse(bruto);
+		} catch (erro) {
+			console.warn('Falha ao parsear catálogo de projetos:', erro);
+			return [];
+		}
+	})();
+	let variaveisAtuais = [];
+	let servicosAtuais = [];
+	let servicoSelecionado = null;
+
+	function obterDadosResposta(conteudo) {
+		if (conteudo && typeof conteudo === 'object') {
+			if (conteudo.dados && typeof conteudo.dados === 'object') {
+				return conteudo.dados;
+			}
+			if (conteudo.data && typeof conteudo.data === 'object') {
+				return conteudo.data;
+			}
+			return conteudo;
+		}
+		return {};
+	}
+
+	function atualizarResumoProjeto() {
+		const idProjeto = (seletorProjeto.value || '').trim();
+		const projeto = projetosCatalogo.find((item) => item.idProjeto === idProjeto);
+		if (!projeto) {
+			resumoProjetoOperacao.textContent = 'Projeto não encontrado no catálogo.';
+			return;
+		}
+
+		const caminho = projeto.caminhoProjeto || projeto.caminhoEnv || 'Não localizado automaticamente';
+		const venvs = Array.isArray(projeto.venvs) ? projeto.venvs : [];
+		const textoVenv = venvs.length ? `venv(s): ${venvs.join(' | ')}` : 'venv: não localizada';
+		resumoProjetoOperacao.textContent = `Caminho: ${caminho} | ${textoVenv}`;
+	}
+
+	function ativarAba(nomeAba) {
+		const mostrarVariaveis = nomeAba === 'variaveis';
+
+		btnAbaVariaveis.classList.toggle('ativo', mostrarVariaveis);
+		btnAbaServicos.classList.toggle('ativo', !mostrarVariaveis);
+		btnAbaVariaveis.setAttribute('aria-selected', mostrarVariaveis ? 'true' : 'false');
+		btnAbaServicos.setAttribute('aria-selected', mostrarVariaveis ? 'false' : 'true');
+
+		painelVariaveisOperacao.classList.toggle('hub-oculto', !mostrarVariaveis);
+		painelServicosOperacao.classList.toggle('hub-oculto', mostrarVariaveis);
+	}
+
+	async function carregarVariaveisProjeto() {
+		const idProjeto = (seletorProjeto.value || '').trim();
+		if (!idProjeto) {
+			return;
+		}
+
+		tabelaVariaveis.querySelector('tbody').innerHTML = '<tr><td colspan="3">Carregando variáveis...</td></tr>';
+		const resposta = await fetch(`${urlListarVariaveis}?idProjeto=${encodeURIComponent(idProjeto)}`, { cache: 'no-cache' });
+		const conteudo = await resposta.json();
+		const dados = obterDadosResposta(conteudo);
+		if (!resposta.ok) {
+			const mensagem = conteudo?.mensagem || 'Falha ao carregar variáveis.';
+			tabelaVariaveis.querySelector('tbody').innerHTML = `<tr><td colspan="3">${mensagem}</td></tr>`;
+			return;
+		}
+
+		variaveisAtuais = Array.isArray(dados?.variaveis) ? dados.variaveis : [];
+		renderizarVariaveisFiltradas();
+	}
+
+	function renderizarVariaveisFiltradas() {
+		const termo = (filtroVariavel.value || '').trim().toLowerCase();
+		const variaveis = variaveisAtuais.filter((item) => {
+			const chave = String(item?.chave || '').toLowerCase();
+			const descricao = String(item?.descricao || '').toLowerCase();
+			return !termo || chave.includes(termo) || descricao.includes(termo);
+		});
+
+		if (!variaveis.length) {
+			tabelaVariaveis.querySelector('tbody').innerHTML = '<tr><td colspan="3">Nenhuma variável encontrada para o filtro atual.</td></tr>';
+			return;
+		}
+
+		const linhas = variaveis.map((item) => {
+			const valorAtual = item.valorDefinido ? (item.valor || '') : '';
+			const textoValor = valorAtual ? escapeHtml(valorAtual) : '<span class="hub-operacoes-vazio">Não definido</span>';
+			const disabled = item.permiteEdicao ? '' : 'disabled';
+			return `
+				<tr data-chave="${item.chave}" data-descricao="${escapeHtml(item.descricao || '')}" data-permite-edicao="${item.permiteEdicao ? '1' : '0'}" data-valor="${escapeHtml(valorAtual)}">
+					<td><code>${item.chave}</code></td>
+					<td class="hub-operacoes-valor-celula">${textoValor}</td>
+					<td class="hub-coluna-acoes">
+						<button type="button" class="btn btn-sm btn-primary js-editar-variavel" ${disabled}>Editar</button>
+					</td>
+				</tr>
+			`;
+		});
+
+		tabelaVariaveis.querySelector('tbody').innerHTML = linhas.join('');
+	}
+
+	function escapeHtml(valor) {
+		return String(valor || '')
+			.replaceAll('&', '&amp;')
+			.replaceAll('<', '&lt;')
+			.replaceAll('>', '&gt;')
+			.replaceAll('"', '&quot;')
+			.replaceAll("'", '&#39;');
+	}
+
+	function abrirModalVariavel(linha) {
+		const idProjeto = (seletorProjeto.value || '').trim();
+		const projeto = projetosCatalogo.find((item) => item.idProjeto === idProjeto);
+		const permiteEdicao = linha?.dataset?.permiteEdicao === '1';
+		if (!permiteEdicao) {
+			return;
+		}
+
+		modalProjetoVariavel.value = projeto?.nomeProjeto || idProjeto;
+		modalChaveVariavel.value = linha?.dataset?.chave || '';
+		modalDescricaoVariavel.value = linha?.dataset?.descricao || '';
+		modalValorVariavel.value = linha?.dataset?.valor || '';
+		modalSaidaServico.value = '';
+		LuftCore.abrirModal('modalEditarVariavelOperacao');
+	}
+
+	async function salvarVariavelPorModal() {
+		const idProjeto = (seletorProjeto.value || '').trim();
+		const chave = (modalChaveVariavel.value || '').trim();
+		const valor = modalValorVariavel.value || '';
+
+		if (!idProjeto || !chave) {
+			alert('Projeto ou chave inválida para atualização.');
+			return;
+		}
+
+		btnSalvarVariavelModal.disabled = true;
+		const textoOriginal = btnSalvarVariavelModal.textContent;
+		btnSalvarVariavelModal.textContent = 'Salvando...';
+
+		try {
+			const resposta = await fetch(urlSalvarVariavel, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Requested-With': 'XMLHttpRequest'
+				},
+				body: JSON.stringify({ idProjeto, chave, valor })
+			});
+
+			const conteudo = await resposta.json();
+			if (!resposta.ok) {
+				alert(conteudo?.mensagem || 'Falha ao salvar variável.');
+				return;
+			}
+
+			await carregarVariaveisProjeto();
+			LuftCore.fecharModal('modalEditarVariavelOperacao');
+		} catch (erro) {
+			console.error('Falha ao salvar variável:', erro);
+			alert('Erro de conexão ao salvar variável.');
+		} finally {
+			btnSalvarVariavelModal.disabled = false;
+			btnSalvarVariavelModal.textContent = textoOriginal;
+		}
+	}
+
+	async function atualizarTabelaServicos() {
+		const resposta = await fetch(urlListarServicos, { cache: 'no-cache' });
+		const conteudo = await resposta.json();
+		const dados = obterDadosResposta(conteudo);
+		if (!resposta.ok) {
+			alert(conteudo?.mensagem || 'Falha ao atualizar status dos serviços.');
+			return;
+		}
+
+		servicosAtuais = Array.isArray(dados?.servicos) ? dados.servicos : [];
+		const corpo = tabelaServicos.querySelector('tbody');
+		corpo.innerHTML = servicosAtuais.map((servico) => {
+			const badgeClasse = servico.status === 'RUNNING'
+				? 'hub-badge hub-badge-ok'
+				: (servico.status === 'STOPPED' || servico.status === 'NAO_CONFIGURADO' || servico.status === 'NAO_ENCONTRADO'
+					? 'hub-badge hub-badge-alerta'
+					: 'hub-badge');
+			return `
+				<tr data-id-servico="${escapeHtml(servico.idServico)}">
+					<td>
+						<strong>${escapeHtml(servico.nomeExibicao)}</strong>
+						<small>${escapeHtml(servico.nomeServico || '-')}</small>
+					</td>
+					<td><span class="${badgeClasse}">${escapeHtml(servico.status || 'DESCONHECIDO')}</span></td>
+					<td class="hub-coluna-acoes">
+						<button type="button" class="btn btn-sm btn-primary js-gerenciar-servico">Gerenciar</button>
+					</td>
+				</tr>
+			`;
+		}).join('');
+	}
+
+	function obterServicoPorId(idServico) {
+		return servicosAtuais.find((item) => String(item.idServico) === String(idServico));
+	}
+
+	function renderizarBadgeStatusModal(status) {
+		modalStatusServico.className = 'hub-badge';
+		if (status === 'RUNNING') {
+			modalStatusServico.classList.add('hub-badge-ok');
+		} else if (status === 'STOPPED' || status === 'NAO_CONFIGURADO' || status === 'NAO_ENCONTRADO') {
+			modalStatusServico.classList.add('hub-badge-alerta');
+		}
+		modalStatusServico.textContent = status || 'DESCONHECIDO';
+	}
+
+	function abrirModalServico(idServico) {
+		const servico = obterServicoPorId(idServico);
+		if (!servico) {
+			return;
+		}
+
+		servicoSelecionado = servico;
+		modalTituloServico.textContent = servico.nomeExibicao || 'Serviço';
+		modalDescricaoServico.textContent = servico.descricao || '';
+		modalNomeTecnicoServico.value = servico.nomeServico || '';
+		renderizarBadgeStatusModal(servico.status || 'DESCONHECIDO');
+		modalSaidaServico.value = servico.detalhe || '';
+		LuftCore.abrirModal('modalGerenciarServicoOperacao');
+	}
+
+	async function executarAcaoServicoModal(acao, botao) {
+		if (!servicoSelecionado || !acao) {
+			return;
+		}
+
+		const confirma = confirm(`Confirmar ação '${acao}' para '${servicoSelecionado.nomeExibicao}'?`);
+		if (!confirma) {
+			return;
+		}
+
+		botao.disabled = true;
+		const textoOriginal = botao.textContent;
+		botao.textContent = 'Executando...';
+
+		try {
+			const resposta = await fetch(urlAcaoServico, {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Requested-With': 'XMLHttpRequest'
+				},
+				body: JSON.stringify({ idServico: servicoSelecionado.idServico, acao })
+			});
+			const conteudo = await resposta.json();
+			const dados = obterDadosResposta(conteudo);
+			if (!resposta.ok) {
+				alert(conteudo?.mensagem || 'Falha ao executar ação de serviço.');
+				return;
+			}
+
+			const historico = Array.isArray(dados?.historico) ? dados.historico : [];
+			const saidas = historico.map((item) => `[${item.comando}] ${item.status}\n${item.saida || ''}`).join('\n\n');
+			modalSaidaServico.value = saidas || 'Ação executada sem saída detalhada.';
+			renderizarBadgeStatusModal(dados?.statusFinal || 'DESCONHECIDO');
+			await atualizarTabelaServicos();
+		} catch (erro) {
+			console.error('Falha ao acionar serviço:', erro);
+			alert('Erro de conexão ao executar ação de serviço.');
+		} finally {
+			botao.disabled = false;
+			botao.textContent = textoOriginal;
+		}
+	}
+
+	function tratarCliqueTabelaVariaveis(evento) {
+		const botao = evento.target.closest('.js-editar-variavel');
+		if (!botao) {
+			return;
+		}
+
+		const linha = botao.closest('tr');
+		if (!linha) {
+			return;
+		}
+		abrirModalVariavel(linha);
+	}
+
+	function tratarCliqueTabelaServicos(evento) {
+		const botao = evento.target.closest('.js-gerenciar-servico');
+		if (!botao) {
+			return;
+		}
+
+		const linha = botao.closest('tr');
+		const idServico = linha?.dataset?.idServico || '';
+		if (!idServico) {
+			return;
+		}
+
+		abrirModalServico(idServico);
+	}
+
+	async function tratarCliqueAcaoServicoModal(evento) {
+		const botao = evento.target.closest('.js-acao-servico-modal');
+		if (!botao) {
+			return;
+		}
+		await executarAcaoServicoModal(botao.dataset.acao || '', botao);
+	}
+
+	seletorProjeto.addEventListener('change', function AoTrocarProjeto() {
+		atualizarResumoProjeto();
+		carregarVariaveisProjeto();
+	});
+	if (filtroVariavel) {
+		filtroVariavel.addEventListener('input', renderizarVariaveisFiltradas);
+	}
+	tabelaVariaveis.addEventListener('click', tratarCliqueTabelaVariaveis);
+	tabelaServicos.addEventListener('click', tratarCliqueTabelaServicos);
+	btnSalvarVariavelModal.addEventListener('click', salvarVariavelPorModal);
+	if (btnAtualizarVariaveis) {
+		btnAtualizarVariaveis.addEventListener('click', carregarVariaveisProjeto);
+	}
+	if (btnAtualizarServicos) {
+		btnAtualizarServicos.addEventListener('click', atualizarTabelaServicos);
+	}
+	if (btnAbaVariaveis) {
+		btnAbaVariaveis.addEventListener('click', function AoClicarAbaVariaveis() {
+			ativarAba('variaveis');
+		});
+	}
+	if (btnAbaServicos) {
+		btnAbaServicos.addEventListener('click', function AoClicarAbaServicos() {
+			ativarAba('servicos');
+			atualizarTabelaServicos();
+		});
+	}
+	const modalGerenciarServico = document.getElementById('modalGerenciarServicoOperacao');
+	if (modalGerenciarServico) {
+		modalGerenciarServico.addEventListener('click', tratarCliqueAcaoServicoModal);
+	}
+
+	if (seletorProjeto.value) {
+		atualizarResumoProjeto();
+		carregarVariaveisProjeto();
+	}
+
+	ativarAba('variaveis');
+	atualizarTabelaServicos();
+})();
+</script>
+{% endblock %}

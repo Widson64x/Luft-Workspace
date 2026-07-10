@@ -1,0 +1,432 @@
+{% extends "Layout/AdminBaseLayout.html" %}
+{% import 'luftcore/components.html' as ui %}
+
+{% block title %}Administracao de Sistemas{% endblock %}
+
+{% block page_content %}
+{% set total_sistemas = sistemas|length %}
+{% set total_ativos = sistemas|selectattr('Ativo')|list|length %}
+{% set total_manutencao = sistemas|selectattr('Em_Manutencao')|list|length %}
+{% set total_sem_link = sistemas|selectattr('Link', 'equalto', None)|list|length %}
+
+<section class="hub-pagina">
+<div class="hub-cabecalho hub-reveal-up">
+	<h1>Administracao de Sistemas</h1>
+	<p>Gestao avancada do catalogo central com edicao por modal, vinculo de permissao base e estrutura preparada para expansao futura.</p>
+</div>
+
+<section class="hub-admin-hero hub-reveal-up" style="animation-delay: 50ms;">
+	<div class="hub-admin-kpis">
+		<article class="hub-admin-kpi">
+			<span>Total</span>
+			<strong>{{ total_sistemas }}</strong>
+			<small>Sistemas cadastrados</small>
+		</article>
+		<article class="hub-admin-kpi">
+			<span>Ativos</span>
+			<strong>{{ total_ativos }}</strong>
+			<small>Em operacao</small>
+		</article>
+		<article class="hub-admin-kpi">
+			<span>Manutencao</span>
+			<strong>{{ total_manutencao }}</strong>
+			<small>Com bloqueio de acesso</small>
+		</article>
+		<article class="hub-admin-kpi">
+			<span>Sem Link</span>
+			<strong>{{ total_sem_link }}</strong>
+			<small>Dependem de configuracao</small>
+		</article>
+	</div>
+
+	<div class="hub-admin-acoes">
+		<button class="btn btn-primary" type="button" id="btnNovoSistema">
+			<i class="ph-bold ph-plus-circle"></i> Novo Sistema
+		</button>
+		<button class="btn btn-outline" type="button" onclick="window.location.reload()">
+			<i class="ph-bold ph-arrows-clockwise"></i> Atualizar Lista
+		</button>
+	</div>
+</section>
+
+<section class="hub-admin-grade hub-reveal-up" style="animation-delay: 100ms;">
+	<div class="hub-admin-grade-header">
+		<h3>Catalogo de Sistemas</h3>
+		<p>Clique em editar para abrir o modal de gestao completa.</p>
+	</div>
+
+	<div class="hub-admin-tabela-wrapper">
+		<table class="hub-admin-tabela">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>Sistema</th>
+					<th>Status</th>
+					<th>Permissao Base</th>
+					<th>Link</th>
+					<th class="hub-coluna-acoes">Acoes</th>
+				</tr>
+			</thead>
+			<tbody>
+				{% for sistema in sistemas %}
+				<tr
+					data-id-sistema="{{ sistema.Id_Sistema }}"
+					data-nome-sistema="{{ sistema.Nome_Sistema|e }}"
+					data-descricao-sistema="{{ (sistema.Descricao_Sistema or '')|e }}"
+					data-icone="{{ (sistema.Icone or 'ph-bold ph-app-window')|e }}"
+					data-link="{{ (sistema.Link or '')|e }}"
+					data-id-permissao-base="{{ sistema.Id_Permissao_Base or '' }}"
+					data-ativo="{{ 1 if sistema.Ativo else 0 }}"
+					data-em-manutencao="{{ 1 if sistema.Em_Manutencao else 0 }}"
+				>
+					<td>{{ sistema.Id_Sistema }}</td>
+					<td>
+						<div class="hub-admin-sistema-celula">
+							<span class="hub-admin-icone-celula"><i class="{{ sistema.Icone or 'ph-bold ph-app-window' }}"></i></span>
+							<div>
+								<strong>{{ sistema.Nome_Sistema }}</strong>
+								<small>{{ sistema.Descricao_Sistema or 'Sem descricao cadastrada.' }}</small>
+							</div>
+						</div>
+					</td>
+					<td>
+						{% if sistema.Em_Manutencao %}
+						<span class="hub-badge hub-badge-alerta">Em manutencao</span>
+						{% elif sistema.Ativo %}
+						<span class="hub-badge hub-badge-ok">Operacional</span>
+						{% else %}
+						<span class="hub-badge">Inativo</span>
+						{% endif %}
+					</td>
+					<td>{{ sistema.Id_Permissao_Base or '-' }}</td>
+					<td>
+						{% if sistema.Link %}
+						<a href="{{ sistema.Link }}" target="_blank" rel="noopener noreferrer">{{ sistema.Link }}</a>
+						{% else %}
+						-
+						{% endif %}
+					</td>
+					<td class="hub-coluna-acoes">
+						<button class="btn btn-sm btn-outline js-editar-sistema" type="button">
+							<i class="ph-bold ph-pencil-simple"></i> Editar
+						</button>
+					</td>
+				</tr>
+				{% endfor %}
+			</tbody>
+		</table>
+	</div>
+</section>
+
+{% call ui.modal('modalSistemaHub', 'Gestao de Sistema', tamanho='lg', icone='ph-bold ph-app-window') %}
+<div class="hub-modal-sistema">
+	<form id="formSistemaHub" class="hub-modal-grid">
+		<input type="hidden" id="idSistema" value="0">
+
+		<div class="hub-modal-coluna-principal">
+			<div class="hub-campo-linha">
+				<label for="nomeSistema">Nome do Sistema</label>
+				<input type="text" id="nomeSistema" class="form-control" placeholder="Ex.: Luft-Control" required>
+			</div>
+
+			<div class="hub-campo-linha">
+				<label for="descricaoSistema">Descricao</label>
+				<textarea id="descricaoSistema" class="form-control" rows="3" placeholder="Descricao funcional do sistema"></textarea>
+			</div>
+
+			<div class="hub-campo-duplo">
+				<div class="hub-campo-linha">
+					<label for="link">Link de Acesso</label>
+					<input type="url" id="link" class="form-control" placeholder="https://...">
+				</div>
+				<div class="hub-campo-linha">
+					<label for="idPermissaoBase">Permissao Base</label>
+					<select id="idPermissaoBase" class="form-control">
+						<option value="">Sem vinculo</option>
+						{% for grupoSistema in permissoesPorSistema %}
+						<optgroup label="{{ grupoSistema.nomeSistema }}">
+						{% for permissao in grupoSistema.permissoes %}
+							<option value="{{ permissao.Id_Permissao }}">
+								{{ permissao.Id_Permissao }} - {{ permissao.Chave_Permissao }}
+							</option>
+						{% endfor %}
+						</optgroup>
+						{% endfor %}
+					</select>
+				</div>
+			</div>
+
+			<div class="hub-campo-checks">
+				<label class="hub-checkcard">
+					<input type="checkbox" id="ativo" checked>
+					<span class="hub-checkcard-titulo">Ativo</span>
+					<small>Sistema disponível no catálogo</small>
+				</label>
+				<label class="hub-checkcard">
+					<input type="checkbox" id="emManutencao">
+					<span class="hub-checkcard-titulo">Em manutenção</span>
+					<small>Bloqueia acesso temporariamente</small>
+				</label>
+			</div>
+		</div>
+
+		<aside class="hub-modal-coluna-lateral">
+			<div class="hub-campo-linha">
+				<label for="icone">Icone</label>
+				<div class="hub-preview-icone">
+					<span id="previewIcone"><i class="ph-bold ph-app-window"></i></span>
+					<input type="text" id="icone" class="form-control" placeholder="ph-bold ph-app-window" value="ph-bold ph-app-window">
+				</div>
+			</div>
+
+			<div class="hub-painel-icones">
+				<span>Seleção de ícone</span>
+				<button type="button" class="btn btn-outline" id="btnAbrirSeletorIcone">
+					<i class="ph-bold ph-grid-four"></i> Abrir seletor de ícones
+				</button>
+				<small>Abra o seletor para visualizar os ícones em tamanho maior.</small>
+			</div>
+		</aside>
+	</form>
+
+	<div class="hub-modal-futuro">
+		<i class="ph-bold ph-sparkle"></i>
+		<span>Estrutura preparada para futuras colunas (owner, criticidade, dominio, tags e metadados operacionais).</span>
+	</div>
+
+	<div class="hub-modal-acoes">
+		<button type="button" class="btn btn-outline" onclick="LuftCore.fecharModal('modalSistemaHub')">Cancelar</button>
+		<button type="button" class="btn btn-primary" id="btnSalvarSistemaModal">
+			<i class="ph-bold ph-floppy-disk"></i> Salvar alteracoes
+		</button>
+	</div>
+</div>
+{% endcall %}
+
+{% call ui.modal('modalSeletorIconeHub', 'Selecionar Ícone', tamanho='lg', icone='ph-bold ph-grid-four') %}
+<div class="hub-submodal-icone">
+	<div class="hub-campo-linha">
+		<label for="filtroIconesHub">Buscar ícone</label>
+		<input type="text" id="filtroIconesHub" class="form-control" placeholder="Buscar ícone (ex.: chart, user, cloud)">
+	</div>
+	<div class="hub-lista-icones hub-lista-icones-grande" id="listaIconesHubModal"></div>
+	<div class="hub-modal-acoes">
+		<button type="button" class="btn btn-outline" onclick="LuftCore.fecharModal('modalSeletorIconeHub')">Fechar</button>
+	</div>
+</div>
+{% endcall %}
+</section>
+
+<script>
+(function InicializarPainelSistemasAvancado() {
+	const urlCatalogoIcones = "{{ url_for('static', filename='Data/IconesHub.json') }}";
+	const iconesFallback = [
+		'ph-bold ph-app-window',
+		'ph-bold ph-gear-six',
+		'ph-bold ph-sliders-horizontal',
+		'ph-bold ph-plugs-connected',
+		'ph-bold ph-database',
+		'ph-bold ph-graph',
+		'ph-bold ph-chart-line-up',
+		'ph-bold ph-airplane-takeoff',
+		'ph-bold ph-file-text',
+		'ph-bold ph-shield-check',
+		'ph-bold ph-network',
+		'ph-bold ph-terminal-window',
+		'ph-bold ph-flow-arrow'
+	];
+
+	const botaoNovoSistema = document.getElementById('btnNovoSistema');
+	const botaoSalvar = document.getElementById('btnSalvarSistemaModal');
+	const botaoAbrirSeletorIcone = document.getElementById('btnAbrirSeletorIcone');
+	const tabela = document.querySelector('.hub-admin-tabela');
+	const inputIcone = document.getElementById('icone');
+	const filtroIconesHub = document.getElementById('filtroIconesHub');
+	const previewIcone = document.getElementById('previewIcone');
+	const listaIconesHub = document.getElementById('listaIconesHubModal');
+
+	function RenderizarListaIcones(listaIcones) {
+		listaIconesHub.innerHTML = '';
+
+		listaIcones.forEach((icone) => {
+			const botao = document.createElement('button');
+			botao.type = 'button';
+			botao.className = 'hub-icone-item';
+			botao.dataset.icone = icone;
+			botao.innerHTML = `<i class="${icone}"></i>`;
+			listaIconesHub.appendChild(botao);
+		});
+
+		AtualizarSelecaoIconeVisual();
+	}
+
+	async function CarregarCatalogoIcones() {
+		try {
+			const resposta = await fetch(urlCatalogoIcones, { cache: 'no-cache' });
+			if (!resposta.ok) {
+				throw new Error('Falha ao carregar JSON de icones.');
+			}
+
+			const conteudo = await resposta.json();
+			const lista = Array.isArray(conteudo?.icones) ? conteudo.icones : [];
+			RenderizarListaIcones(lista.length ? lista : iconesFallback);
+		} catch (erro) {
+			console.warn('Usando fallback de icones por indisponibilidade do JSON.', erro);
+			RenderizarListaIcones(iconesFallback);
+		}
+	}
+
+	function AtualizarSelecaoIconeVisual() {
+		const classeIconeSelecionada = (inputIcone.value || 'ph-bold ph-app-window').trim();
+		listaIconesHub.querySelectorAll('.hub-icone-item').forEach((item) => {
+			item.classList.toggle('ativo', item.dataset.icone === classeIconeSelecionada);
+		});
+	}
+
+	function FiltrarListaIcones() {
+		const termo = (filtroIconesHub.value || '').toLowerCase().trim();
+		listaIconesHub.querySelectorAll('.hub-icone-item').forEach((item) => {
+			const icone = (item.dataset.icone || '').toLowerCase();
+			item.style.display = icone.includes(termo) ? 'inline-flex' : 'none';
+		});
+	}
+
+	function AtualizarPreviewIcone() {
+		const classeIcone = (inputIcone.value || 'ph-bold ph-app-window').trim();
+		previewIcone.innerHTML = `<i class="${classeIcone}"></i>`;
+		AtualizarSelecaoIconeVisual();
+	}
+
+	function LimparFormulario() {
+		document.getElementById('idSistema').value = '0';
+		document.getElementById('nomeSistema').value = '';
+		document.getElementById('descricaoSistema').value = '';
+		document.getElementById('icone').value = 'ph-bold ph-app-window';
+		document.getElementById('link').value = '';
+		document.getElementById('idPermissaoBase').value = '';
+		document.getElementById('ativo').checked = true;
+		document.getElementById('emManutencao').checked = false;
+		AtualizarPreviewIcone();
+	}
+
+	function PreencherFormularioPorLinha(linha) {
+		document.getElementById('idSistema').value = linha.dataset.idSistema || '0';
+		document.getElementById('nomeSistema').value = linha.dataset.nomeSistema || '';
+		document.getElementById('descricaoSistema').value = linha.dataset.descricaoSistema || '';
+		document.getElementById('icone').value = linha.dataset.icone || 'ph-bold ph-app-window';
+		document.getElementById('link').value = linha.dataset.link || '';
+		document.getElementById('idPermissaoBase').value = linha.dataset.idPermissaoBase || '';
+		document.getElementById('ativo').checked = (linha.dataset.ativo === '1');
+		document.getElementById('emManutencao').checked = (linha.dataset.emManutencao === '1');
+		AtualizarPreviewIcone();
+	}
+
+	botaoNovoSistema.addEventListener('click', function AbrirNovoSistema() {
+		LimparFormulario();
+		LuftCore.abrirModal('modalSistemaHub');
+	});
+
+	tabela.addEventListener('click', function CliqueNaTabela(evento) {
+		const botaoEditar = evento.target.closest('.js-editar-sistema');
+		if (!botaoEditar) {
+			return;
+		}
+
+		const linha = botaoEditar.closest('tr');
+		if (!linha) {
+			return;
+		}
+
+		PreencherFormularioPorLinha(linha);
+		LuftCore.abrirModal('modalSistemaHub');
+	});
+
+	inputIcone.addEventListener('input', AtualizarPreviewIcone);
+	filtroIconesHub.addEventListener('input', FiltrarListaIcones);
+
+	botaoAbrirSeletorIcone.addEventListener('click', function AbrirSeletorIcone() {
+		LuftCore.abrirModal('modalSeletorIconeHub');
+		filtroIconesHub.focus();
+	});
+
+	listaIconesHub.addEventListener('click', function SelecionarIcone(evento) {
+		const botaoIcone = evento.target.closest('.hub-icone-item');
+		if (!botaoIcone) {
+			return;
+		}
+
+		inputIcone.value = botaoIcone.dataset.icone || 'ph-bold ph-app-window';
+		AtualizarPreviewIcone();
+		LuftCore.fecharModal('modalSeletorIconeHub');
+	});
+
+	botaoSalvar.addEventListener('click', async function SalvarSistema() {
+		const payload = {
+			idSistema: Number(document.getElementById('idSistema').value || 0),
+			nomeSistema: document.getElementById('nomeSistema').value,
+			descricaoSistema: document.getElementById('descricaoSistema').value,
+			icone: document.getElementById('icone').value,
+			link: document.getElementById('link').value,
+			idPermissaoBase: document.getElementById('idPermissaoBase').value,
+			ativo: document.getElementById('ativo').checked,
+			emManutencao: document.getElementById('emManutencao').checked,
+		};
+
+		const nomeSistema = (payload.nomeSistema || '').trim();
+		if (!nomeSistema) {
+			alert('Informe o nome do sistema antes de salvar.');
+			return;
+		}
+
+		const linkAcesso = (payload.link || '').trim();
+		if (linkAcesso && !/^https?:\/\//i.test(linkAcesso)) {
+			alert('O link deve iniciar com http:// ou https://');
+			return;
+		}
+
+		botaoSalvar.disabled = true;
+		const textoOriginal = botaoSalvar.innerHTML;
+		botaoSalvar.innerHTML = '<i class="ph-bold ph-spinner-gap"></i> Salvando...';
+
+		try {
+			const resposta = await fetch("{{ url_for('Principal.ApiSalvarSistema') }}", {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-Requested-With': 'XMLHttpRequest'
+				},
+				body: JSON.stringify(payload)
+			});
+
+			let conteudo = null;
+			try {
+				conteudo = await resposta.json();
+			} catch {
+				conteudo = null;
+			}
+
+			if (!resposta.ok) {
+				const mensagemErro =
+					conteudo?.mensagem ||
+					conteudo?.message ||
+					(resposta.status === 403 ? 'Você não possui permissão para editar sistemas.' : 'Falha ao salvar sistema.');
+				const detalheTecnico = conteudo?.detalhes?.erro || conteudo?.error || '';
+				alert(detalheTecnico ? `${mensagemErro}\n\nDetalhe: ${detalheTecnico}` : mensagemErro);
+				return;
+			}
+
+			window.location.reload();
+		} catch (erro) {
+			console.error('Erro ao salvar sistema:', erro);
+			alert('Erro de conexão ao salvar. Tente novamente.');
+		} finally {
+			botaoSalvar.disabled = false;
+			botaoSalvar.innerHTML = textoOriginal;
+		}
+	});
+
+	AtualizarPreviewIcone();
+	CarregarCatalogoIcones();
+})();
+</script>
+{% endblock %}

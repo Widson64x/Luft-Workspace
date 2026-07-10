@@ -1,0 +1,163 @@
+name: Deploy Luft-Workspace
+
+on:
+  push:
+    branches:
+      - main
+      - homologacao
+
+jobs:
+  deploy_production:
+    name: Deploy to Production
+    if: github.ref == 'refs/heads/main'
+    runs-on: [self-hosted, Windows, X64]
+    
+    steps:
+    - name: Baixar código (Runner)
+      uses: actions/checkout@v4
+
+    - name: Atualizar Aplicação no Servidor
+      shell: powershell
+      env:
+        COMMIT_MSG: ${{ github.event.head_commit.message || 'Deploy manual' }}
+        COMMIT_AUTHOR: ${{ github.actor }}
+        PYTHONUTF8: "1"
+        PYTHONIOENCODING: "utf-8"
+      run: |
+        # --- CONFIGURAÇÕES ---
+        $ServiceName = "Luft-Workspace"
+        $AppPath = "C:\ProjetosPython\Luft-Workspace"
+        $LogFile = "C:\GitHubRunners\Luft-Workspace\deploy-log.txt"
+        $NssmExe = "C:\nssm-2.24\win64\nssm.exe"
+        
+        # Inicia Log
+        if (-not (Test-Path "C:\GitHubRunners\Luft-Workspace")) { New-Item -ItemType Directory -Path "C:\GitHubRunners\Luft-Workspace" -Force }
+        Start-Transcript -Path $LogFile -Append
+        Write-Host "--- DEPLOY INICIADO: $(Get-Date) por $env:COMMIT_AUTHOR ---"
+        Write-Host "Msg: $env:COMMIT_MSG"
+        
+        $ErrorActionPreference = "Stop"
+
+        Write-Host "1. Verificando estado do serviço $ServiceName..."
+        $ServiceObj = Get-Service $ServiceName -ErrorAction SilentlyContinue
+        
+        if ($ServiceObj -and $ServiceObj.Status -eq 'Running') {
+            Write-Host "Status atual: RODANDO. Tentando parar..."
+            try {
+                cmd /c "$NssmExe stop $ServiceName" 2>&1 | Out-Null
+                Start-Sleep -Seconds 5
+            } catch {
+                Write-Warning "Aviso ao tentar parar: $_"
+            }
+        } else {
+            Write-Host "O serviço já está PARADO ou não existe. Seguindo..."
+        }
+
+        Write-Host "2. Copiando arquivos para $AppPath..."
+        if (-not (Test-Path $AppPath)) { 
+            New-Item -Path $AppPath -ItemType Directory -Force 
+        }
+
+        Copy-Item -Path ".\*" -Destination $AppPath -Recurse -Force -Exclude ".git",".venv"
+        Write-Host "Arquivos copiados com sucesso."
+
+        Write-Host "3. Verificando dependências..."
+        Set-Location $AppPath
+        $ErrorActionPreference = "Continue"
+
+        if (Test-Path ".venv") {
+            cmd /c ".venv\Scripts\python.exe -m pip install -r requirements.txt 2>&1"
+        } else {
+            Write-Warning "Criando venv..."
+            cmd /c "python -m venv .venv"
+            cmd /c ".venv\Scripts\python.exe -m pip install -r requirements.txt 2>&1"
+        }
+
+        $ErrorActionPreference = "Stop"
+
+        Write-Host "4. Iniciando serviço $ServiceName..."
+        try {
+             cmd /c "$NssmExe start $ServiceName" 2>&1 | Out-Null
+        } catch {
+             Write-Warning "Tentativa de start retornou erro (pode já estar rodando)."
+        }
+        
+        Start-Sleep -Seconds 5
+        
+        $ServiceStatus = Get-Service $ServiceName
+        if ($ServiceStatus.Status -eq 'Running') {
+            Write-Host "SUCESSO: Serviço iniciado e rodando!"
+        } else {
+            Write-Error "FALHA CRÍTICA: O serviço não subiu."
+            Stop-Transcript; exit 1
+        }
+
+        Write-Host "--- DEPLOY FINALIZADO ---"
+        Stop-Transcript
+
+  deploy_homologation:
+    name: Deploy to Homologation
+    if: github.ref == 'refs/heads/homologacao'
+    runs-on: [self-hosted, Linux, homologacao]
+    
+    steps:
+    - name: Baixar código (Runner)
+      uses: actions/checkout@v4
+
+    - name: Atualizar Aplicação no Servidor (Linux)
+      shell: bash
+      env:
+        COMMIT_MSG: ${{ github.event.head_commit.message || 'Deploy manual' }}
+        COMMIT_AUTHOR: ${{ github.actor }}
+        PYTHONUTF8: "1"
+        PYTHONIOENCODING: "utf-8"
+      run: |
+        # --- CONFIGURAÇÕES ---
+        SERVICE_NAME="luft-workspace.service"
+        APP_PATH="/home/suporte/Mirror_Python_80/ProjetosPython/Luft-Workspace"
+        
+        echo "--- DEPLOY INICIADO: $(date) por $COMMIT_AUTHOR ---"
+        echo "Msg: $COMMIT_MSG"
+        
+        set -e
+
+        echo "1. Verificando estado do serviço $SERVICE_NAME..."
+        if sudo systemctl is-active --quiet $SERVICE_NAME; then
+            echo "Status atual: RODANDO. Tentando parar..."
+            sudo systemctl stop $SERVICE_NAME || echo "Aviso ao tentar parar."
+            sleep 5
+        else
+            echo "O serviço já está PARADO ou não existe. Seguindo..."
+        fi
+
+        echo "2. Copiando arquivos para $APP_PATH..."
+        mkdir -p $APP_PATH
+        rsync -av --exclude='.git' --exclude='.venv' ./ $APP_PATH/
+        
+        echo "Arquivos copiados com sucesso."
+
+        echo "3. Verificando dependências..."
+        cd $APP_PATH
+        
+        if [ ! -d ".venv" ]; then
+            echo "Criando venv..."
+            python3 -m venv .venv
+        fi
+        
+        echo "Instalando requirements..."
+        .venv/bin/python -m pip install -r requirements.txt
+
+        echo "4. Iniciando serviço $SERVICE_NAME..."
+        sudo systemctl start $SERVICE_NAME || echo "Aviso ao tentar iniciar."
+        
+        sleep 5
+        
+        if sudo systemctl is-active --quiet $SERVICE_NAME; then
+            echo "SUCESSO: Serviço iniciado e rodando!"
+        else
+            echo "FALHA CRÍTICA: O serviço não subiu."
+            sudo systemctl status $SERVICE_NAME
+            exit 1
+        fi
+
+        echo "--- DEPLOY FINALIZADO ---"

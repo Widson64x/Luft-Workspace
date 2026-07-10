@@ -1,0 +1,17 @@
+{% extends "Layout/AdminBaseLayout.html" %}
+
+{% block title %}{{ tituloModulo }}{% endblock %}
+
+{% block page_content %}
+<section class="hub-pagina">
+	<div class="hub-cabecalho hub-reveal-up">
+		<h1>{{ tituloModulo }}</h1>
+		<p>{{ descricaoModulo }}</p>
+	</div>
+
+	<section class="hub-vazio hub-reveal-up">
+		<h3>Módulo em construção</h3>
+		<p>Esta rota foi criada como placeholder para preparar permissões e navegação por perfil.</p>
+	</section>
+</section>
+{% endblock %}
