@@ -92,12 +92,19 @@ class ServicoOperacoesAmbiente:
 
     _CATALOGO_PROJETOS: tuple[dict[str, Any], ...] = (
         {
-            "idProjeto": "workspace",
-            "nomeProjeto": "Workspace",
-            "nomesDiretorio": ("Workspace",),
+            "idProjeto": "Luft-Workspace",
+            "nomeProjeto": "Luft-Workspace",
+            "nomesDiretorio": ("Luft-Workspace",),
             "variavelCaminhoProjeto": "WORKSPACE_PROJECT_DIR",
             "variaveisPermitidas": _VARIAVEIS_PADRAO + (
                 VariavelPermitida("LUFT_USAR_PREFIXO_MENSAGENS", "Ativa prefixo no endpoint de mensagens."),
+                VariavelPermitida("WORKSPACE_SERVICE_NAME", "Nome do servico do Luft-Workspace."),
+                VariavelPermitida("LUFT_CONTROL_SERVICE_NAME", "Nome do servico do Luft-Control."),
+                VariavelPermitida("LUFT_CONNECTAIR_SERVICE_NAME", "Nome do servico do Luft-ConnectAir."),
+                VariavelPermitida("LUFT_DOCS_WEB_SERVICE_NAME", "Nome do servico do Luft-Docs Web."),
+                VariavelPermitida("LUFT_DOCS_API_SERVICE_NAME", "Nome do servico do Luft-Docs API."),
+                VariavelPermitida("LUFT_INTEGRADOR_SERVICE_NAME", "Nome do servico do Luft-Integrador."),
+                VariavelPermitida("NGINX_SERVICE_NAME", "Nome do servico do Nginx."),
             ),
             "subpastasExtrasVenv": (),
         },
@@ -120,19 +127,19 @@ class ServicoOperacoesAmbiente:
             ),
             "subpastasExtrasVenv": (),
         },
-        {
-            "idProjeto": "luft-docs",
-            "nomeProjeto": "Luft-Docs (Web/API)",
-            "nomesDiretorio": ("Luft-Docs",),
-            "variavelCaminhoProjeto": "LUFT_DOCS_PROJECT_DIR",
-            "variaveisPermitidas": _VARIAVEIS_PADRAO + (
-                VariavelPermitida("BASE_PREFIX", "Prefixo base da aplicacao web do Luft-Docs."),
-                VariavelPermitida("API_PREFIX", "Prefixo base da API do Luft-Docs."),
-                VariavelPermitida("APP_HOST", "Host de bind da API do Luft-Docs."),
-                VariavelPermitida("APP_PORT", "Porta de bind da API do Luft-Docs."),
-            ),
-            "subpastasExtrasVenv": ("Luft-Docs", "Luft-Docs_API"),
-        },
+        # {
+        #     "idProjeto": "luft-docs",
+        #     "nomeProjeto": "Luft-Docs (Web/API)",
+        #     "nomesDiretorio": ("Luft-Docs",),
+        #     "variavelCaminhoProjeto": "LUFT_DOCS_PROJECT_DIR",
+        #     "variaveisPermitidas": _VARIAVEIS_PADRAO + (
+        #         VariavelPermitida("BASE_PREFIX", "Prefixo base da aplicacao web do Luft-Docs."),
+        #         VariavelPermitida("API_PREFIX", "Prefixo base da API do Luft-Docs."),
+        #         VariavelPermitida("APP_HOST", "Host de bind da API do Luft-Docs."),
+        #         VariavelPermitida("APP_PORT", "Porta de bind da API do Luft-Docs."),
+        #     ),
+        #     "subpastasExtrasVenv": ("Luft-Docs", "Luft-Docs_API"),
+        # },
         {
             "idProjeto": "luft-integrador",
             "nomeProjeto": "Luft-Integrador",
@@ -145,35 +152,35 @@ class ServicoOperacoesAmbiente:
 
     _SERVICOS: tuple[ServicoControlavel, ...] = (
         ServicoControlavel(
-            idServico="workspace",
-            nomeExibicao="Workspace",
-            nomeVariavelServico="WORKSPACE_SERVICE_NAME",
-            descricao="Servico do Hub central (porta 9010).",
+            idServico="Luft-Workspace",
+            nomeExibicao="Luft-Workspace",
+            nomeVariavelServico="LUFT_WORKSPACE_SERVICE_NAME",
+            descricao="Servico do Hub central (porta 9000).",
         ),
         ServicoControlavel(
             idServico="luft-control",
             nomeExibicao="Luft-Control",
             nomeVariavelServico="LUFT_CONTROL_SERVICE_NAME",
-            descricao="Servico da aplicacao Luft-Control (porta 9002).",
+            descricao="Servico da aplicacao Luft-Control (porta 9001).",
         ),
         ServicoControlavel(
             idServico="luft-connectair",
             nomeExibicao="Luft-ConnectAir",
             nomeVariavelServico="LUFT_CONNECTAIR_SERVICE_NAME",
-            descricao="Servico da aplicacao Luft-ConnectAir (porta 9003).",
+            descricao="Servico da aplicacao Luft-ConnectAir (porta 9002).",
         ),
-        ServicoControlavel(
-            idServico="luft-docs-web",
-            nomeExibicao="Luft-Docs Web",
-            nomeVariavelServico="LUFT_DOCS_WEB_SERVICE_NAME",
-            descricao="Servico da aplicacao Luft-Docs web (porta 9000).",
-        ),
-        ServicoControlavel(
-            idServico="luft-docs-api",
-            nomeExibicao="Luft-Docs API",
-            nomeVariavelServico="LUFT_DOCS_API_SERVICE_NAME",
-            descricao="Servico da API Luft-Docs (porta 9001).",
-        ),
+        # ServicoControlavel(
+        #     idServico="luft-docs-web",
+        #     nomeExibicao="Luft-Docs Web",
+        #     nomeVariavelServico="LUFT_DOCS_WEB_SERVICE_NAME",
+        #     descricao="Servico da aplicacao Luft-Docs web.",
+        # ),
+        # ServicoControlavel(
+        #     idServico="luft-docs-api",
+        #     nomeExibicao="Luft-Docs API",
+        #     nomeVariavelServico="LUFT_DOCS_API_SERVICE_NAME",
+        #     descricao="Servico da API Luft-Docs (porta 9001).",
+        # ),
         ServicoControlavel(
             idServico="luft-integrador",
             nomeExibicao="Luft-Integrador",
@@ -351,6 +358,7 @@ class ServicoOperacoesAmbiente:
         candidatos.extend(
             [
                 diretorio_atual.parents[3],
+                diretorio_atual.parents[4],
                 diretorio_atual.parents[4] / "Projetos",
                 diretorio_atual.parents[4] / "Aplicacoes",
                 Path("C:/Applications/Python/Projetos"),
