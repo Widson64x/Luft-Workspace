@@ -4,4 +4,4 @@ python-dotenv==1.1.1
 SQLAlchemy==2.0.43
 ldap3==2.9.1
 pyodbc==5.2.0
-LuftCore @ file:///C:/Applications/Python/Libs/LuftCore
+LuftCore @ git+https://github.com/Widson64x/LuftCore.git@v0.2.1
