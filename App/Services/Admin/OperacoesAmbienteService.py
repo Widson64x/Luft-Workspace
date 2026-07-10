@@ -98,6 +98,13 @@ class ServicoOperacoesAmbiente:
             "variavelCaminhoProjeto": "WORKSPACE_PROJECT_DIR",
             "variaveisPermitidas": _VARIAVEIS_PADRAO + (
                 VariavelPermitida("LUFT_USAR_PREFIXO_MENSAGENS", "Ativa prefixo no endpoint de mensagens."),
+                VariavelPermitida("WORKSPACE_SERVICE_NAME", "Nome do servico do Workspace."),
+                VariavelPermitida("LUFT_CONTROL_SERVICE_NAME", "Nome do servico do Luft-Control."),
+                VariavelPermitida("LUFT_CONNECTAIR_SERVICE_NAME", "Nome do servico do Luft-ConnectAir."),
+                VariavelPermitida("LUFT_DOCS_WEB_SERVICE_NAME", "Nome do servico do Luft-Docs Web."),
+                VariavelPermitida("LUFT_DOCS_API_SERVICE_NAME", "Nome do servico do Luft-Docs API."),
+                VariavelPermitida("LUFT_INTEGRADOR_SERVICE_NAME", "Nome do servico do Luft-Integrador."),
+                VariavelPermitida("NGINX_SERVICE_NAME", "Nome do servico do Nginx."),
             ),
             "subpastasExtrasVenv": (),
         },
@@ -351,6 +358,7 @@ class ServicoOperacoesAmbiente:
         candidatos.extend(
             [
                 diretorio_atual.parents[3],
+                diretorio_atual.parents[4],
                 diretorio_atual.parents[4] / "Projetos",
                 diretorio_atual.parents[4] / "Aplicacoes",
                 Path("C:/Applications/Python/Projetos"),
