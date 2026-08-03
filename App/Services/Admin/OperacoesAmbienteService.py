@@ -98,7 +98,7 @@ class ServicoOperacoesAmbiente:
             "variavelCaminhoProjeto": "WORKSPACE_PROJECT_DIR",
             "variaveisPermitidas": _VARIAVEIS_PADRAO + (
                 VariavelPermitida("LUFT_USAR_PREFIXO_MENSAGENS", "Ativa prefixo no endpoint de mensagens."),
-                VariavelPermitida("WORKSPACE_SERVICE_NAME", "Nome do servico do Luft-Workspace."),
+                VariavelPermitida("LUFT_WORKSPACE_SERVICE_NAME", "Nome do servico do Luft-Workspace."),
                 VariavelPermitida("LUFT_CONTROL_SERVICE_NAME", "Nome do servico do Luft-Control."),
                 VariavelPermitida("LUFT_CONNECTAIR_SERVICE_NAME", "Nome do servico do Luft-ConnectAir."),
                 VariavelPermitida("LUFT_DOCS_WEB_SERVICE_NAME", "Nome do servico do Luft-Docs Web."),
@@ -315,6 +315,21 @@ class ServicoOperacoesAmbiente:
             historico.append(self._executarComandoServico(comando))
 
         status_final = self._consultarStatusServico(nome_servico)
+
+        acao_para_status_esperado = {
+            "iniciar": "RUNNING",
+            "reiniciar": "RUNNING",
+            "parar": "STOPPED",
+        }
+        status_esperado = acao_para_status_esperado.get(acao_normalizada)
+        if status_esperado and status_final != status_esperado:
+            ultimo_detalhe = ""
+            if historico:
+                ultimo_detalhe = str(historico[-1].get("saida") or "").strip()
+            if not ultimo_detalhe:
+                ultimo_detalhe = f"Status final retornado: {status_final}."
+            raise ValueError(f"Falha ao executar a ação '{acao_normalizada}' no serviço '{nome_servico}'. {ultimo_detalhe}")
+
         return {
             "idServico": definicao_servico.idServico,
             "nomeServico": nome_servico,
@@ -527,8 +542,12 @@ class ServicoOperacoesAmbiente:
                     return "STOPPED"
                 return "DESCONHECIDO"
 
+            executavel_systemctl = self._resolverExecutavelSistema("systemctl")
+            if not executavel_systemctl:
+                return "DESCONHECIDO"
+
             resultado = subprocess.run(
-                ["systemctl", "is-active", nomeServico],
+                [executavel_systemctl, "is-active", nomeServico],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
@@ -542,6 +561,11 @@ class ServicoOperacoesAmbiente:
                 return "STOPPED"
             if saida == "unknown":
                 return "NAO_ENCONTRADO"
+
+            # Alguns ambientes retornam mensagem textual em vez de "unknown".
+            if "could not be found" in saida or "not-found" in saida or "not found" in saida:
+                return "NAO_ENCONTRADO"
+
             return "DESCONHECIDO"
         except FileNotFoundError:
             return "DESCONHECIDO"
@@ -565,10 +589,35 @@ class ServicoOperacoesAmbiente:
             verbo = {"iniciar": "start", "parar": "stop"}[acao]
             return [["sc.exe", verbo, nomeServico]]
 
+        executavel_systemctl = self._resolverExecutavelSistema("systemctl") or "systemctl"
+        executavel_sudo = self._resolverExecutavelSistema("sudo")
+
+        prefixo_comando: list[str] = []
+        if executavel_sudo:
+            prefixo_comando = [executavel_sudo, "-n"]
+
         if acao == "reiniciar":
-            return [["sudo", "systemctl", "restart", nomeServico]]
+            return [prefixo_comando + [executavel_systemctl, "restart", nomeServico]]
         verbo = {"iniciar": "start", "parar": "stop"}[acao]
-        return [["sudo", "systemctl", verbo, nomeServico]]
+        return [prefixo_comando + [executavel_systemctl, verbo, nomeServico]]
+
+    def _resolverExecutavelSistema(self, nomeExecutavel: str) -> str:
+        """Resolve o caminho de um executável crítico mesmo em ambientes com PATH reduzido."""
+        caminho_resolvido = shutil.which(nomeExecutavel)
+        if caminho_resolvido:
+            return caminho_resolvido
+
+        candidatos_linux = (
+            f"/usr/bin/{nomeExecutavel}",
+            f"/bin/{nomeExecutavel}",
+            f"/usr/sbin/{nomeExecutavel}",
+            f"/sbin/{nomeExecutavel}",
+        )
+        for candidato in candidatos_linux:
+            if Path(candidato).exists():
+                return candidato
+
+        return ""
 
     def _executarComandoServico(self, comando: list[str]) -> dict[str, str | int]:
         """Executa um comando de controle de serviço e captura saída detalhada."""
