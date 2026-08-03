@@ -22,3 +22,4 @@ O fluxo padrão para desenvolvimento e deploy em homologação é o seguinte:
    - Vá ao GitHub e clique em "Compare & pull request".
    - **MUITO IMPORTANTE:** Altere a branch base (base branch) de `main` para `homologacao`.
    - Conclua a criação do PR.
+   
