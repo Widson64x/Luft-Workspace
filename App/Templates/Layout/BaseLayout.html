@@ -13,13 +13,19 @@
 {% set endpoint_atual = request.endpoint or '' %}
 
 {% set hub_ativo = endpoint_atual == 'Principal.MenuPrincipal' %}
-{% set configuracoes_ativo = endpoint_atual in ['Principal.ConfiguracoesHub', 'Principal.PainelSistemas'] %}
+{% set endpoints_config = ['Principal.ConfiguracoesHub'] %}
+{% for modulo in ModulosConfiguracaoMenu %}
+    {% set _ = endpoints_config.append(modulo.endpoint) %}
+{% endfor %}
+{% set configuracoes_ativo = endpoint_atual in endpoints_config %}
 
 {% call ui.nav_item('Hub de Sistemas', icone='ph-bold ph-squares-four', ativo=hub_ativo) %}
-{{ ui.nav_item('Visão Geral', icone='ph-bold ph-house', href=url_for('Principal.MenuPrincipal'), ativo=(endpoint_atual == 'Principal.MenuPrincipal')) }}
+{{ ui.nav_item('Visão Geral', icone='ph-fill ph-house', href=url_for('Principal.MenuPrincipal'), ativo=(endpoint_atual == 'Principal.MenuPrincipal')) }}
 {% for sistema in SistemasMenu %}
-    {% if sistema.link and not sistema.emManutencao %}
-{{ ui.nav_item(sistema.nomeSistema, icone=(sistema.icone or 'ph-bold ph-app-window'), href=sistema.link, ativo=False) }}
+    {% set icone_sistema = sistema.icone or '' %}
+    {% set destino_sistema = url_for('Principal.MenuPrincipal') if 'ph-house' in icone_sistema else sistema.link %}
+    {% if destino_sistema and not sistema.emManutencao %}
+{{ ui.nav_item(sistema.nomeSistema, icone=(sistema.icone or 'ph-bold ph-app-window'), href=destino_sistema, ativo=False) }}
     {% else %}
 {{ ui.nav_item(sistema.nomeSistema ~ ' (indisponível)', icone='ph-bold ph-lock-key', href=url_for('Principal.MenuPrincipal'), ativo=False) }}
     {% endif %}
@@ -27,10 +33,14 @@
 {% endcall %}
 
 {% call ui.nav_item('Configurações', icone='ph-bold ph-sliders-horizontal', ativo=configuracoes_ativo) %}
-{{ ui.nav_item('Painel de Configurações', icone='ph-bold ph-sliders-horizontal', href=url_for('Principal.ConfiguracoesHub'), ativo=(endpoint_atual == 'Principal.ConfiguracoesHub')) }}
-{% if PodeAdministrarHub %}
-{{ ui.nav_item('Administrar Sistemas', icone='ph-bold ph-app-window', href=url_for('Principal.PainelSistemas'), ativo=(endpoint_atual == 'Principal.PainelSistemas')) }}
-{% endif %}
+{{ ui.nav_item('Painel Central', icone='ph-bold ph-squares-four', href=url_for('Principal.ConfiguracoesHub'), ativo=(endpoint_atual == 'Principal.ConfiguracoesHub')) }}
+{% for modulo in ModulosConfiguracaoMenu %}
+    {% if modulo.status == 'Em breve' %}
+{{ ui.nav_item(modulo.nome ~ ' (em breve)', icone=modulo.icone, href='#', ativo=False) }}
+    {% else %}
+{{ ui.nav_item(modulo.nome, icone=modulo.icone, href=url_for(modulo.endpoint), ativo=(endpoint_atual == modulo.endpoint)) }}
+    {% endif %}
+{% endfor %}
 {% endcall %}
 {% endblock %}
 
@@ -51,5 +61,7 @@
 {% endblock %}
 
 {% block content %}
-{% block page_content %}{% endblock %}
+<section class="hub-shell">
+    {% block page_content %}{% endblock %}
+</section>
 {% endblock %}

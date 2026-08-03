@@ -11,6 +11,7 @@ from sqlalchemy.exc import IntegrityError
 
 from App.Routes.Principal import PrincipalBp
 from App.Services.Admin.SistemasHubService import ServicoSistemasHub
+from App.Services.Admin.OperacoesAmbienteService import ServicoOperacoesAmbiente
 
 
 @PrincipalBp.route("/admin/sistemas")
@@ -55,11 +56,17 @@ def PainelSistemas():
 	finally:
 		sessao.close()
 
+	servico_operacoes = ServicoOperacoesAmbiente()
+	projetos_operacao = servico_operacoes.listarProjetos()
+	servicos_operacao = servico_operacoes.listarServicos()
+
 	return render_template(
 		"Pages/Admin/AdminSistemas.html",
 		sistemas=sistemas,
 		permissoes=permissoes,
 		permissoesPorSistema=permissoes_por_sistema,
+		projetosOperacao=projetos_operacao,
+		servicosOperacao=servicos_operacao,
 	)
 
 
