@@ -16,6 +16,38 @@ jobs:
     - name: Baixar código (Runner)
       uses: actions/checkout@v4
 
+    - name: Validar fluxo homologacao -> main
+      shell: powershell
+      run: |
+        $ErrorActionPreference = "Stop"
+
+        git fetch origin homologacao --no-tags
+
+        $shaAtual = $env:GITHUB_SHA
+        $deployPermitido = $false
+
+        # Caso raro onde o commit de main ja eh descendente direto da homologacao.
+        git merge-base --is-ancestor origin/homologacao $shaAtual
+        if ($LASTEXITCODE -eq 0) {
+          $deployPermitido = $true
+        }
+
+        if (-not $deployPermitido) {
+          $pais = (git show -s --format=%P $shaAtual).Trim().Split(' ', [System.StringSplitOptions]::RemoveEmptyEntries)
+          if ($pais.Count -ge 2) {
+            $segundoPai = $pais[1]
+            git merge-base --is-ancestor $segundoPai origin/homologacao
+            if ($LASTEXITCODE -eq 0) {
+              $deployPermitido = $true
+            }
+          }
+        }
+
+        if (-not $deployPermitido) {
+          Write-Error "Deploy de producao bloqueado: main deve receber alteracoes apenas via merge de homologacao."
+          exit 1
+        }
+
     - name: Atualizar Aplicação no Servidor
       shell: powershell
       env:
