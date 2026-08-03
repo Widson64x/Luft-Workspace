@@ -3,568 +3,438 @@
 
 {% block title %}Operações de Ambiente{% endblock %}
 
+{% block extra_head %}
+{{ super() }}
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/Admin/OperacoesAmbiente.css') }}">
+{% endblock %}
+
 {% block page_content %}
 <section class="hub-pagina">
-	<div id="operacoesAmbienteDados" data-projetos="{{ projetosOperacao | tojson | forceescape }}" hidden></div>
-	<div class="hub-cabecalho hub-reveal-up">
-		<h1>Operações de Ambiente</h1>
-		<p>Gestão operacional centralizada com edição segura por modal e controle de ciclo de vida dos serviços.</p>
-	</div>
+    <div id="operacoesAmbienteDados" data-projetos="{{ projetosOperacao | tojson | forceescape }}" hidden></div>
 
-	<section class="hub-admin-hero hub-reveal-up" style="animation-delay: 40ms;">
-		<div class="hub-admin-kpis hub-admin-kpis-compactos">
-			<article class="hub-admin-kpi">
-				<span>Projetos</span>
-				<strong>{{ projetosOperacao|length }}</strong>
-				<small>Mapeados para operação</small>
-			</article>
-			<article class="hub-admin-kpi">
-				<span>Serviços</span>
-				<strong>{{ servicosOperacao|length }}</strong>
-				<small>Comandos de ciclo de vida</small>
-			</article>
-		</div>
-	</section>
+    <header class="hub-cabecalho hub-reveal-up">
+        <h1>Operações de Ambiente</h1>
+        <p>Administração de variáveis e serviços com foco em controle operacional, segurança e resposta rápida de suporte.</p>
+    </header>
 
-	<section class="hub-operacoes-abas hub-reveal-up" style="animation-delay: 80ms;" aria-label="Seções de Operações">
-		<header class="hub-operacoes-abas-topo">
-			<h3>Seções Operacionais</h3>
-			<div class="hub-operacoes-abas-acoes" role="tablist" aria-label="Alternar seção">
-				<button type="button" class="hub-aba-btn ativo" id="btnAbaVariaveis" data-aba="variaveis" role="tab" aria-selected="true" aria-controls="painelVariaveisOperacao">Variáveis</button>
-				<button type="button" class="hub-aba-btn" id="btnAbaServicos" data-aba="servicos" role="tab" aria-selected="false" aria-controls="painelServicosOperacao">Serviços</button>
-			</div>
-		</header>
+    <section class="ops-abas-container hub-reveal-up" style="animation-delay: 100ms;">
+        <div class="ops-abas-header">
+            <h3>Gestão operacional</h3>
+            <div class="ops-abas-botoes" role="tablist" aria-label="Alternar seção">
+                <button type="button" class="ops-aba-btn ativo" id="btnAbaVariaveis" data-aba="variaveis" role="tab" aria-selected="true">
+                    <i class="ph-bold ph-sliders-horizontal"></i> Variáveis
+                </button>
+                <button type="button" class="ops-aba-btn" id="btnAbaServicos" data-aba="servicos" role="tab" aria-selected="false">
+                    <i class="ph-bold ph-gear-six"></i> Serviços
+                </button>
+            </div>
+        </div>
 
-		<section class="hub-operacoes-abas-conteudo">
-			<article class="hub-operacoes-secao-unica" id="painelVariaveisOperacao" role="tabpanel" aria-labelledby="btnAbaVariaveis">
-				<header class="hub-admin-grade-header hub-operacoes-secao-topo">
-					<div>
-						<h3>Variáveis</h3>
-						<p>Whitelisted por projeto com edição segura</p>
-					</div>
-					<button type="button" class="btn btn-sm btn-outline" id="btnAtualizarVariaveis">Recarregar</button>
-				</header>
+        <div class="ops-painel-aba ops-visivel" id="painelVariaveisOperacao" role="tabpanel" aria-labelledby="btnAbaVariaveis">
+            <div class="ops-secao-header">
+                <h4><i class="ph-bold ph-key"></i> Variáveis de ambiente</h4>
+                <button type="button" class="ops-btn-atualizar" id="btnAtualizarVariaveis">
+                    <i class="ph-bold ph-arrows-clockwise"></i> Recarregar
+                </button>
+            </div>
 
-				<div class="hub-operacoes-secao-corpo">
-					<section class="hub-operacoes-secao" aria-label="Filtros de variáveis">
-						<div class="hub-operacoes-filtros-linha">
-							<div class="hub-operacoes-filtro-item">
-								<label for="projetoOperacaoSelect">Projeto</label>
-								<select id="projetoOperacaoSelect" class="form-control">
-									{% for projeto in projetosOperacao %}
-									<option value="{{ projeto.idProjeto }}">{{ projeto.nomeProjeto }}</option>
-									{% endfor %}
-								</select>
-							</div>
-							<div class="hub-operacoes-filtro-item">
-								<label for="filtroVariavelOperacao">Buscar chave</label>
-								<input id="filtroVariavelOperacao" class="form-control" type="text" placeholder="Ex.: SESSION_COOKIE_NAME">
-							</div>
-						</div>
+            <div class="ops-variaveis-wrapper">
+                <div class="ops-filtros">
+                    <div class="ops-filtro-grupo">
+                        <label for="projetoOperacaoSelect">Projeto</label>
+                        <select id="projetoOperacaoSelect" class="form-control">
+                            {% for projeto in projetosOperacao %}
+                            <option value="{{ projeto.idProjeto }}">{{ projeto.nomeProjeto }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="ops-filtro-grupo">
+                        <label for="filtroVariavelOperacao">Buscar chave</label>
+                        <input id="filtroVariavelOperacao" class="form-control" type="text" placeholder="Ex.: SESSION_COOKIE_NAME">
+                    </div>
+                </div>
 
-						<small class="hub-operacoes-resumo" id="resumoProjetoOperacao">Selecione um projeto para visualizar caminho e virtualenv.</small>
-					</section>
+                <small class="ops-resumo-projeto" id="resumoProjetoOperacao">Selecione um projeto para visualizar caminho e virtualenv.</small>
 
-					<section class="hub-operacoes-secao hub-operacoes-secao-tabela" aria-label="Tabela de variáveis permitidas">
-						<div class="hub-admin-tabela-wrapper hub-tabela-compacta">
-							<table class="hub-admin-tabela" id="tabelaVariaveisOperacao">
-								<thead>
-									<tr>
-										<th>Chave</th>
-										<th>Valor</th>
-										<th class="hub-coluna-acoes">Ação</th>
-									</tr>
-								</thead>
-								<tbody>
-									<tr>
-										<td colspan="3">Selecione um projeto para carregar as variáveis.</td>
-									</tr>
-								</tbody>
-							</table>
-						</div>
-					</section>
-				</div>
-			</article>
+                <div class="ops-var-tabela-container">
+                    <table class="ops-var-tabela" id="tabelaVariaveisOperacao">
+                        <thead>
+                            <tr>
+                                <th>Chave</th>
+                                <th>Valor</th>
+                                <th class="ops-col-acoes">Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="3">Selecione um projeto para carregar as variáveis.</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
 
-			<article class="hub-operacoes-secao-unica hub-oculto" id="painelServicosOperacao" role="tabpanel" aria-labelledby="btnAbaServicos">
-				<header class="hub-admin-grade-header hub-operacoes-secao-topo">
-					<div>
-						<h3>Serviços</h3>
-						<p>Gestão operacional por modal e status em tempo real</p>
-					</div>
-					<button type="button" class="btn btn-sm btn-outline" id="btnAtualizarServicos">Atualizar Status</button>
-				</header>
+        <div class="ops-painel-aba" id="painelServicosOperacao" role="tabpanel" aria-labelledby="btnAbaServicos">
+            <div class="ops-secao-header">
+                <h4><i class="ph-bold ph-gear-six"></i> Serviços do servidor</h4>
+                <button type="button" class="ops-btn-atualizar" id="btnAtualizarServicos">
+                    <i class="ph-bold ph-arrows-clockwise"></i> Atualizar status
+                </button>
+            </div>
 
-				<div class="hub-operacoes-secao-corpo">
-					<section class="hub-operacoes-secao hub-operacoes-secao-tabela" aria-label="Tabela de serviços do servidor">
-						<div class="hub-admin-tabela-wrapper hub-tabela-compacta">
-							<table class="hub-admin-tabela" id="tabelaServicosOperacao">
-								<thead>
-									<tr>
-										<th>Serviço</th>
-										<th>Status</th>
-										<th class="hub-coluna-acoes">Ação</th>
-									</tr>
-								</thead>
-								<tbody>
-									{% for servico in servicosOperacao %}
-									<tr data-id-servico="{{ servico.idServico }}">
-										<td>
-											<strong>{{ servico.nomeExibicao }}</strong>
-											<small>{{ servico.nomeServico or '-' }}</small>
-										</td>
-										<td>
-											{% if servico.status == 'RUNNING' %}
-											<span class="hub-badge hub-badge-ok">RUNNING</span>
-											{% elif servico.status in ['STOPPED', 'NAO_CONFIGURADO', 'NAO_ENCONTRADO'] %}
-											<span class="hub-badge hub-badge-alerta">{{ servico.status }}</span>
-											{% else %}
-											<span class="hub-badge">{{ servico.status }}</span>
-											{% endif %}
-										</td>
-										<td class="hub-coluna-acoes">
-											<button type="button" class="btn btn-sm btn-primary js-gerenciar-servico">Gerenciar</button>
-										</td>
-									</tr>
-									{% endfor %}
-								</tbody>
-							</table>
-						</div>
-					</section>
-				</div>
-			</article>
-		</section>
-	</section>
+            <div class="ops-servicos-grid" id="gridServicosOperacao">
+                {% for servico in servicosOperacao %}
+                <article class="ops-servico-card" data-id-servico="{{ servico.idServico }}" data-status="{{ servico.status }}">
+                    <div class="ops-servico-topo">
+                        <div class="ops-servico-info">
+                            <strong>{{ servico.nomeExibicao }}</strong>
+                            <small>{{ servico.nomeServico or 'Não configurado' }}</small>
+                        </div>
+                        <span class="ops-status-badge" data-status="{{ servico.status }}">
+                            <span class="ops-status-dot"></span>
+                            {{ servico.status }}
+                        </span>
+                    </div>
+                    <div class="ops-servico-acoes">
+                        <button type="button" class="ops-acao-btn js-acao-servico" data-acao="iniciar" {% if servico.status == 'RUNNING' %}disabled{% endif %}>
+                            <i class="ph-bold ph-play"></i> Iniciar
+                        </button>
+                        <button type="button" class="ops-acao-btn js-acao-servico" data-acao="parar" {% if servico.status != 'RUNNING' %}disabled{% endif %}>
+                            <i class="ph-bold ph-stop"></i> Parar
+                        </button>
+                        <button type="button" class="ops-acao-btn js-acao-servico" data-acao="reiniciar" {% if servico.status != 'RUNNING' %}disabled{% endif %}>
+                            <i class="ph-bold ph-arrows-clockwise"></i> Reiniciar
+                        </button>
+                    </div>
+                </article>
+                {% endfor %}
+            </div>
+        </div>
+    </section>
 
-	{% call ui.modal('modalEditarVariavelOperacao', 'Editar Variável de Ambiente', tamanho='lg', icone='ph-bold ph-sliders-horizontal') %}
-	<div class="hub-operacoes-modal">
-		<div class="hub-campo-linha">
-			<label for="modalProjetoVariavel">Projeto</label>
-			<input id="modalProjetoVariavel" class="form-control" type="text" readonly>
-		</div>
-		<div class="hub-campo-linha">
-			<label for="modalChaveVariavel">Chave</label>
-			<input id="modalChaveVariavel" class="form-control" type="text" readonly>
-		</div>
-		<div class="hub-campo-linha">
-			<label for="modalDescricaoVariavel">Descrição</label>
-			<input id="modalDescricaoVariavel" class="form-control" type="text" readonly>
-		</div>
-		<div class="hub-campo-linha">
-			<label for="modalValorVariavel">Valor</label>
-			<textarea id="modalValorVariavel" class="form-control" rows="4" placeholder="Informe o novo valor"></textarea>
-		</div>
-		<div class="hub-modal-acoes">
-			<button type="button" class="btn btn-outline" onclick="LuftCore.fecharModal('modalEditarVariavelOperacao')">Cancelar</button>
-			<button type="button" class="btn btn-primary" id="btnSalvarVariavelModal">Salvar</button>
-		</div>
-	</div>
-	{% endcall %}
-
-	{% call ui.modal('modalGerenciarServicoOperacao', 'Gerenciar Serviço', tamanho='lg', icone='ph-bold ph-gear-six') %}
-	<div class="hub-operacoes-modal">
-		<div class="hub-operacoes-servico-cabecalho">
-			<h4 id="modalTituloServico">Serviço</h4>
-			<span class="hub-badge" id="modalStatusServico">DESCONHECIDO</span>
-		</div>
-		<p id="modalDescricaoServico" class="hub-operacoes-resumo"></p>
-		<div class="hub-campo-linha">
-			<label for="modalNomeTecnicoServico">Nome técnico</label>
-			<input id="modalNomeTecnicoServico" class="form-control" type="text" readonly>
-		</div>
-		<div class="hub-modal-acoes">
-			<button type="button" class="btn btn-outline js-acao-servico-modal" data-acao="iniciar">Iniciar</button>
-			<button type="button" class="btn btn-outline js-acao-servico-modal" data-acao="parar">Parar</button>
-			<button type="button" class="btn btn-primary js-acao-servico-modal" data-acao="reiniciar">Reiniciar</button>
-		</div>
-		<div class="hub-campo-linha">
-			<label for="modalSaidaServico">Saída operacional</label>
-			<textarea id="modalSaidaServico" class="form-control" rows="5" readonly placeholder="Aguardando ação..."></textarea>
-		</div>
-	</div>
-	{% endcall %}
+    {% call ui.modal('modalEditarVariavelOperacao', 'Editar variável de ambiente', tamanho='lg', icone='ph-bold ph-sliders-horizontal') %}
+    <div class="hub-operacoes-modal">
+        <div class="hub-campo-linha">
+            <label for="modalProjetoVariavel">Projeto</label>
+            <input id="modalProjetoVariavel" class="form-control" type="text" readonly>
+        </div>
+        <div class="hub-campo-linha">
+            <label for="modalChaveVariavel">Chave</label>
+            <input id="modalChaveVariavel" class="form-control" type="text" readonly>
+        </div>
+        <div class="hub-campo-linha">
+            <label for="modalDescricaoVariavel">Descrição</label>
+            <input id="modalDescricaoVariavel" class="form-control" type="text" readonly>
+        </div>
+        <div class="hub-campo-linha">
+            <label for="modalValorVariavel">Valor</label>
+            <textarea id="modalValorVariavel" class="form-control" rows="4" placeholder="Informe o novo valor"></textarea>
+        </div>
+        <div class="hub-modal-acoes">
+            <button type="button" class="btn btn-outline" onclick="LuftCore.fecharModal('modalEditarVariavelOperacao')">Cancelar</button>
+            <button type="button" class="btn btn-primary" id="btnSalvarVariavelModal">Salvar</button>
+        </div>
+    </div>
+    {% endcall %}
 </section>
 
 <script>
 (function InicializarOperacoesAmbiente() {
-	const seletorProjeto = document.getElementById('projetoOperacaoSelect');
-	const filtroVariavel = document.getElementById('filtroVariavelOperacao');
-	const tabelaVariaveis = document.getElementById('tabelaVariaveisOperacao');
-	const tabelaServicos = document.getElementById('tabelaServicosOperacao');
-	const resumoProjetoOperacao = document.getElementById('resumoProjetoOperacao');
-	const btnSalvarVariavelModal = document.getElementById('btnSalvarVariavelModal');
-	const modalProjetoVariavel = document.getElementById('modalProjetoVariavel');
-	const modalChaveVariavel = document.getElementById('modalChaveVariavel');
-	const modalDescricaoVariavel = document.getElementById('modalDescricaoVariavel');
-	const modalValorVariavel = document.getElementById('modalValorVariavel');
+    const seletorProjeto = document.getElementById('projetoOperacaoSelect');
+    const filtroVariavel = document.getElementById('filtroVariavelOperacao');
+    const tabelaVariaveis = document.getElementById('tabelaVariaveisOperacao');
+    const tabelaVariaveisBody = tabelaVariaveis.querySelector('tbody');
+    const gridServicos = document.getElementById('gridServicosOperacao');
+    const resumoProjeto = document.getElementById('resumoProjetoOperacao');
 
-	const modalTituloServico = document.getElementById('modalTituloServico');
-	const modalStatusServico = document.getElementById('modalStatusServico');
-	const modalDescricaoServico = document.getElementById('modalDescricaoServico');
-	const modalNomeTecnicoServico = document.getElementById('modalNomeTecnicoServico');
-	const modalSaidaServico = document.getElementById('modalSaidaServico');
-	const btnAtualizarVariaveis = document.getElementById('btnAtualizarVariaveis');
-	const btnAtualizarServicos = document.getElementById('btnAtualizarServicos');
-	const btnAbaVariaveis = document.getElementById('btnAbaVariaveis');
-	const btnAbaServicos = document.getElementById('btnAbaServicos');
-	const painelVariaveisOperacao = document.getElementById('painelVariaveisOperacao');
-	const painelServicosOperacao = document.getElementById('painelServicosOperacao');
+    const btnSalvarVariavelModal = document.getElementById('btnSalvarVariavelModal');
+    const btnAtualizarVariaveis = document.getElementById('btnAtualizarVariaveis');
+    const btnAtualizarServicos = document.getElementById('btnAtualizarServicos');
+    const btnAbaVariaveis = document.getElementById('btnAbaVariaveis');
+    const btnAbaServicos = document.getElementById('btnAbaServicos');
 
-	const urlListarVariaveis = "{{ url_for('Principal.ApiListarVariaveisProjetoOperacoesAmbiente') }}";
-	const urlSalvarVariavel = "{{ url_for('Principal.ApiSalvarVariavelProjetoOperacoesAmbiente') }}";
-	const urlListarServicos = "{{ url_for('Principal.ApiListarServicosOperacoesAmbiente') }}";
-	const urlAcaoServico = "{{ url_for('Principal.ApiExecutarAcaoServicoOperacoesAmbiente') }}";
+    const painelVariaveis = document.getElementById('painelVariaveisOperacao');
+    const painelServicos = document.getElementById('painelServicosOperacao');
 
-	const dadosOperacoes = document.getElementById('operacoesAmbienteDados');
-	const projetosCatalogo = (() => {
-		try {
-			const bruto = dadosOperacoes?.dataset?.projetos || '[]';
-			return JSON.parse(bruto);
-		} catch (erro) {
-			console.warn('Falha ao parsear catálogo de projetos:', erro);
-			return [];
-		}
-	})();
-	let variaveisAtuais = [];
-	let servicosAtuais = [];
-	let servicoSelecionado = null;
+    const modalProjetoVariavel = document.getElementById('modalProjetoVariavel');
+    const modalChaveVariavel = document.getElementById('modalChaveVariavel');
+    const modalDescricaoVariavel = document.getElementById('modalDescricaoVariavel');
+    const modalValorVariavel = document.getElementById('modalValorVariavel');
 
-	function obterDadosResposta(conteudo) {
-		if (conteudo && typeof conteudo === 'object') {
-			if (conteudo.dados && typeof conteudo.dados === 'object') {
-				return conteudo.dados;
-			}
-			if (conteudo.data && typeof conteudo.data === 'object') {
-				return conteudo.data;
-			}
-			return conteudo;
-		}
-		return {};
-	}
+    const endpointListarVariaveis = "{{ url_for('Principal.ApiListarVariaveisProjetoOperacoesAmbiente') }}";
+    const endpointSalvarVariavel = "{{ url_for('Principal.ApiSalvarVariavelProjetoOperacoesAmbiente') }}";
+    const endpointListarServicos = "{{ url_for('Principal.ApiListarServicosOperacoesAmbiente') }}";
+    const endpointAcaoServico = "{{ url_for('Principal.ApiExecutarAcaoServicoOperacoesAmbiente') }}";
 
-	function atualizarResumoProjeto() {
-		const idProjeto = (seletorProjeto.value || '').trim();
-		const projeto = projetosCatalogo.find((item) => item.idProjeto === idProjeto);
-		if (!projeto) {
-			resumoProjetoOperacao.textContent = 'Projeto não encontrado no catálogo.';
-			return;
-		}
+    const dadosOperacoes = document.getElementById('operacoesAmbienteDados');
+    const projetosCatalogo = (() => {
+        try {
+            return JSON.parse(dadosOperacoes?.dataset?.projetos || '[]');
+        } catch {
+            return [];
+        }
+    })();
 
-		const caminho = projeto.caminhoProjeto || projeto.caminhoEnv || 'Não localizado automaticamente';
-		const venvs = Array.isArray(projeto.venvs) ? projeto.venvs : [];
-		const textoVenv = venvs.length ? `venv(s): ${venvs.join(' | ')}` : 'venv: não localizada';
-		resumoProjetoOperacao.textContent = `Caminho: ${caminho} | ${textoVenv}`;
-	}
+    let variaveisAtuais = [];
+    let servicosAtuais = [];
 
-	function ativarAba(nomeAba) {
-		const mostrarVariaveis = nomeAba === 'variaveis';
+    function dadosResposta(payload) {
+        if (payload && typeof payload === 'object') {
+            if (payload.dados && typeof payload.dados === 'object') return payload.dados;
+            if (payload.data && typeof payload.data === 'object') return payload.data;
+            return payload;
+        }
+        return {};
+    }
 
-		btnAbaVariaveis.classList.toggle('ativo', mostrarVariaveis);
-		btnAbaServicos.classList.toggle('ativo', !mostrarVariaveis);
-		btnAbaVariaveis.setAttribute('aria-selected', mostrarVariaveis ? 'true' : 'false');
-		btnAbaServicos.setAttribute('aria-selected', mostrarVariaveis ? 'false' : 'true');
+    function escapeHtml(valor) {
+        return String(valor || '')
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#39;');
+    }
 
-		painelVariaveisOperacao.classList.toggle('hub-oculto', !mostrarVariaveis);
-		painelServicosOperacao.classList.toggle('hub-oculto', mostrarVariaveis);
-	}
+    function ativarAba(nomeAba) {
+        const mostrarVariaveis = nomeAba === 'variaveis';
 
-	async function carregarVariaveisProjeto() {
-		const idProjeto = (seletorProjeto.value || '').trim();
-		if (!idProjeto) {
-			return;
-		}
+        btnAbaVariaveis.classList.toggle('ativo', mostrarVariaveis);
+        btnAbaServicos.classList.toggle('ativo', !mostrarVariaveis);
 
-		tabelaVariaveis.querySelector('tbody').innerHTML = '<tr><td colspan="3">Carregando variáveis...</td></tr>';
-		const resposta = await fetch(`${urlListarVariaveis}?idProjeto=${encodeURIComponent(idProjeto)}`, { cache: 'no-cache' });
-		const conteudo = await resposta.json();
-		const dados = obterDadosResposta(conteudo);
-		if (!resposta.ok) {
-			const mensagem = conteudo?.mensagem || 'Falha ao carregar variáveis.';
-			tabelaVariaveis.querySelector('tbody').innerHTML = `<tr><td colspan="3">${mensagem}</td></tr>`;
-			return;
-		}
+        btnAbaVariaveis.setAttribute('aria-selected', mostrarVariaveis ? 'true' : 'false');
+        btnAbaServicos.setAttribute('aria-selected', mostrarVariaveis ? 'false' : 'true');
 
-		variaveisAtuais = Array.isArray(dados?.variaveis) ? dados.variaveis : [];
-		renderizarVariaveisFiltradas();
-	}
+        painelVariaveis.classList.toggle('ops-visivel', mostrarVariaveis);
+        painelServicos.classList.toggle('ops-visivel', !mostrarVariaveis);
+    }
 
-	function renderizarVariaveisFiltradas() {
-		const termo = (filtroVariavel.value || '').trim().toLowerCase();
-		const variaveis = variaveisAtuais.filter((item) => {
-			const chave = String(item?.chave || '').toLowerCase();
-			const descricao = String(item?.descricao || '').toLowerCase();
-			return !termo || chave.includes(termo) || descricao.includes(termo);
-		});
+    function atualizarResumoProjeto() {
+        const idProjeto = (seletorProjeto.value || '').trim();
+        const projeto = projetosCatalogo.find((item) => item.idProjeto === idProjeto);
 
-		if (!variaveis.length) {
-			tabelaVariaveis.querySelector('tbody').innerHTML = '<tr><td colspan="3">Nenhuma variável encontrada para o filtro atual.</td></tr>';
-			return;
-		}
+        if (!projeto) {
+            resumoProjeto.textContent = 'Projeto não encontrado no catálogo.';
+            return;
+        }
 
-		const linhas = variaveis.map((item) => {
-			const valorAtual = item.valorDefinido ? (item.valor || '') : '';
-			const textoValor = valorAtual ? escapeHtml(valorAtual) : '<span class="hub-operacoes-vazio">Não definido</span>';
-			const disabled = item.permiteEdicao ? '' : 'disabled';
-			return `
-				<tr data-chave="${item.chave}" data-descricao="${escapeHtml(item.descricao || '')}" data-permite-edicao="${item.permiteEdicao ? '1' : '0'}" data-valor="${escapeHtml(valorAtual)}">
-					<td><code>${item.chave}</code></td>
-					<td class="hub-operacoes-valor-celula">${textoValor}</td>
-					<td class="hub-coluna-acoes">
-						<button type="button" class="btn btn-sm btn-primary js-editar-variavel" ${disabled}>Editar</button>
-					</td>
-				</tr>
-			`;
-		});
+        const caminho = projeto.caminhoProjeto || projeto.caminhoEnv || 'Não localizado automaticamente';
+        const venvs = Array.isArray(projeto.venvs) ? projeto.venvs : [];
+        const textoVenv = venvs.length ? `venv(s): ${venvs.join(' | ')}` : 'venv: não localizada';
+        resumoProjeto.textContent = `Caminho: ${caminho} | ${textoVenv}`;
+    }
 
-		tabelaVariaveis.querySelector('tbody').innerHTML = linhas.join('');
-	}
+    async function carregarVariaveisProjeto() {
+        const idProjeto = (seletorProjeto.value || '').trim();
+        if (!idProjeto) return;
 
-	function escapeHtml(valor) {
-		return String(valor || '')
-			.replaceAll('&', '&amp;')
-			.replaceAll('<', '&lt;')
-			.replaceAll('>', '&gt;')
-			.replaceAll('"', '&quot;')
-			.replaceAll("'", '&#39;');
-	}
+        tabelaVariaveisBody.innerHTML = '<tr><td colspan="3">Carregando variáveis...</td></tr>';
 
-	function abrirModalVariavel(linha) {
-		const idProjeto = (seletorProjeto.value || '').trim();
-		const projeto = projetosCatalogo.find((item) => item.idProjeto === idProjeto);
-		const permiteEdicao = linha?.dataset?.permiteEdicao === '1';
-		if (!permiteEdicao) {
-			return;
-		}
+        const resposta = await fetch(`${endpointListarVariaveis}?idProjeto=${encodeURIComponent(idProjeto)}`, { cache: 'no-cache' });
+        const conteudo = await resposta.json();
 
-		modalProjetoVariavel.value = projeto?.nomeProjeto || idProjeto;
-		modalChaveVariavel.value = linha?.dataset?.chave || '';
-		modalDescricaoVariavel.value = linha?.dataset?.descricao || '';
-		modalValorVariavel.value = linha?.dataset?.valor || '';
-		modalSaidaServico.value = '';
-		LuftCore.abrirModal('modalEditarVariavelOperacao');
-	}
+        if (!resposta.ok) {
+            tabelaVariaveisBody.innerHTML = `<tr><td colspan="3">${escapeHtml(conteudo?.mensagem || 'Falha ao carregar variáveis.')}</td></tr>`;
+            return;
+        }
 
-	async function salvarVariavelPorModal() {
-		const idProjeto = (seletorProjeto.value || '').trim();
-		const chave = (modalChaveVariavel.value || '').trim();
-		const valor = modalValorVariavel.value || '';
+        const dados = dadosResposta(conteudo);
+        variaveisAtuais = Array.isArray(dados?.variaveis) ? dados.variaveis : [];
+        renderizarVariaveisFiltradas();
+    }
 
-		if (!idProjeto || !chave) {
-			alert('Projeto ou chave inválida para atualização.');
-			return;
-		}
+    function renderizarVariaveisFiltradas() {
+        const termo = (filtroVariavel.value || '').trim().toLowerCase();
+        const filtradas = variaveisAtuais.filter((item) => {
+            const chave = String(item?.chave || '').toLowerCase();
+            const descricao = String(item?.descricao || '').toLowerCase();
+            return !termo || chave.includes(termo) || descricao.includes(termo);
+        });
 
-		btnSalvarVariavelModal.disabled = true;
-		const textoOriginal = btnSalvarVariavelModal.textContent;
-		btnSalvarVariavelModal.textContent = 'Salvando...';
+        if (!filtradas.length) {
+            tabelaVariaveisBody.innerHTML = '<tr><td colspan="3">Nenhuma variável encontrada para o filtro atual.</td></tr>';
+            return;
+        }
 
-		try {
-			const resposta = await fetch(urlSalvarVariavel, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Requested-With': 'XMLHttpRequest'
-				},
-				body: JSON.stringify({ idProjeto, chave, valor })
-			});
+        tabelaVariaveisBody.innerHTML = filtradas.map((item) => {
+            const valorAtual = item.valorDefinido ? (item.valor || '') : '';
+            const textoValor = valorAtual ? escapeHtml(valorAtual) : '<span class="ops-var-vazio">Não definido</span>';
+            const disabled = item.permiteEdicao ? '' : 'disabled';
 
-			const conteudo = await resposta.json();
-			if (!resposta.ok) {
-				alert(conteudo?.mensagem || 'Falha ao salvar variável.');
-				return;
-			}
+            return `
+                <tr data-chave="${escapeHtml(item.chave)}" data-descricao="${escapeHtml(item.descricao || '')}" data-valor="${escapeHtml(valorAtual)}" data-permite-edicao="${item.permiteEdicao ? '1' : '0'}">
+                    <td><code>${escapeHtml(item.chave)}</code></td>
+                    <td>${textoValor}</td>
+                    <td class="ops-col-acoes">
+                        <button type="button" class="ops-btn-editar js-editar-variavel" ${disabled}>
+                            <i class="ph-bold ph-pencil-simple"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+    }
 
-			await carregarVariaveisProjeto();
-			LuftCore.fecharModal('modalEditarVariavelOperacao');
-		} catch (erro) {
-			console.error('Falha ao salvar variável:', erro);
-			alert('Erro de conexão ao salvar variável.');
-		} finally {
-			btnSalvarVariavelModal.disabled = false;
-			btnSalvarVariavelModal.textContent = textoOriginal;
-		}
-	}
+    function abrirModalVariavel(linha) {
+        const permiteEdicao = linha?.dataset?.permiteEdicao === '1';
+        if (!permiteEdicao) return;
 
-	async function atualizarTabelaServicos() {
-		const resposta = await fetch(urlListarServicos, { cache: 'no-cache' });
-		const conteudo = await resposta.json();
-		const dados = obterDadosResposta(conteudo);
-		if (!resposta.ok) {
-			alert(conteudo?.mensagem || 'Falha ao atualizar status dos serviços.');
-			return;
-		}
+        const idProjeto = (seletorProjeto.value || '').trim();
+        const projeto = projetosCatalogo.find((item) => item.idProjeto === idProjeto);
 
-		servicosAtuais = Array.isArray(dados?.servicos) ? dados.servicos : [];
-		const corpo = tabelaServicos.querySelector('tbody');
-		corpo.innerHTML = servicosAtuais.map((servico) => {
-			const badgeClasse = servico.status === 'RUNNING'
-				? 'hub-badge hub-badge-ok'
-				: (servico.status === 'STOPPED' || servico.status === 'NAO_CONFIGURADO' || servico.status === 'NAO_ENCONTRADO'
-					? 'hub-badge hub-badge-alerta'
-					: 'hub-badge');
-			return `
-				<tr data-id-servico="${escapeHtml(servico.idServico)}">
-					<td>
-						<strong>${escapeHtml(servico.nomeExibicao)}</strong>
-						<small>${escapeHtml(servico.nomeServico || '-')}</small>
-					</td>
-					<td><span class="${badgeClasse}">${escapeHtml(servico.status || 'DESCONHECIDO')}</span></td>
-					<td class="hub-coluna-acoes">
-						<button type="button" class="btn btn-sm btn-primary js-gerenciar-servico">Gerenciar</button>
-					</td>
-				</tr>
-			`;
-		}).join('');
-	}
+        modalProjetoVariavel.value = projeto?.nomeProjeto || idProjeto;
+        modalChaveVariavel.value = linha.dataset.chave || '';
+        modalDescricaoVariavel.value = linha.dataset.descricao || '';
+        modalValorVariavel.value = linha.dataset.valor || '';
 
-	function obterServicoPorId(idServico) {
-		return servicosAtuais.find((item) => String(item.idServico) === String(idServico));
-	}
+        LuftCore.abrirModal('modalEditarVariavelOperacao');
+    }
 
-	function renderizarBadgeStatusModal(status) {
-		modalStatusServico.className = 'hub-badge';
-		if (status === 'RUNNING') {
-			modalStatusServico.classList.add('hub-badge-ok');
-		} else if (status === 'STOPPED' || status === 'NAO_CONFIGURADO' || status === 'NAO_ENCONTRADO') {
-			modalStatusServico.classList.add('hub-badge-alerta');
-		}
-		modalStatusServico.textContent = status || 'DESCONHECIDO';
-	}
+    async function salvarVariavelPorModal() {
+        const idProjeto = (seletorProjeto.value || '').trim();
+        const chave = (modalChaveVariavel.value || '').trim();
+        const valor = modalValorVariavel.value || '';
 
-	function abrirModalServico(idServico) {
-		const servico = obterServicoPorId(idServico);
-		if (!servico) {
-			return;
-		}
+        if (!idProjeto || !chave) {
+            alert('Projeto ou chave inválidos para atualização.');
+            return;
+        }
 
-		servicoSelecionado = servico;
-		modalTituloServico.textContent = servico.nomeExibicao || 'Serviço';
-		modalDescricaoServico.textContent = servico.descricao || '';
-		modalNomeTecnicoServico.value = servico.nomeServico || '';
-		renderizarBadgeStatusModal(servico.status || 'DESCONHECIDO');
-		modalSaidaServico.value = servico.detalhe || '';
-		LuftCore.abrirModal('modalGerenciarServicoOperacao');
-	}
+        btnSalvarVariavelModal.disabled = true;
+        const textoOriginal = btnSalvarVariavelModal.textContent;
+        btnSalvarVariavelModal.textContent = 'Salvando...';
 
-	async function executarAcaoServicoModal(acao, botao) {
-		if (!servicoSelecionado || !acao) {
-			return;
-		}
+        try {
+            const resposta = await fetch(endpointSalvarVariavel, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ idProjeto, chave, valor }),
+            });
 
-		const confirma = confirm(`Confirmar ação '${acao}' para '${servicoSelecionado.nomeExibicao}'?`);
-		if (!confirma) {
-			return;
-		}
+            const conteudo = await resposta.json();
+            if (!resposta.ok) {
+                throw new Error(conteudo?.mensagem || 'Falha ao salvar variável.');
+            }
 
-		botao.disabled = true;
-		const textoOriginal = botao.textContent;
-		botao.textContent = 'Executando...';
+            await carregarVariaveisProjeto();
+            LuftCore.fecharModal('modalEditarVariavelOperacao');
+        } catch (erro) {
+            alert(erro.message || 'Falha ao salvar variável.');
+        } finally {
+            btnSalvarVariavelModal.disabled = false;
+            btnSalvarVariavelModal.textContent = textoOriginal;
+        }
+    }
 
-		try {
-			const resposta = await fetch(urlAcaoServico, {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json',
-					'X-Requested-With': 'XMLHttpRequest'
-				},
-				body: JSON.stringify({ idServico: servicoSelecionado.idServico, acao })
-			});
-			const conteudo = await resposta.json();
-			const dados = obterDadosResposta(conteudo);
-			if (!resposta.ok) {
-				alert(conteudo?.mensagem || 'Falha ao executar ação de serviço.');
-				return;
-			}
+    function renderizarCardsServicos() {
+        gridServicos.innerHTML = servicosAtuais.map((servico) => {
+            const status = servico.status || 'DESCONHECIDO';
+            const estaRodando = status === 'RUNNING';
 
-			const historico = Array.isArray(dados?.historico) ? dados.historico : [];
-			const saidas = historico.map((item) => `[${item.comando}] ${item.status}\n${item.saida || ''}`).join('\n\n');
-			modalSaidaServico.value = saidas || 'Ação executada sem saída detalhada.';
-			renderizarBadgeStatusModal(dados?.statusFinal || 'DESCONHECIDO');
-			await atualizarTabelaServicos();
-		} catch (erro) {
-			console.error('Falha ao acionar serviço:', erro);
-			alert('Erro de conexão ao executar ação de serviço.');
-		} finally {
-			botao.disabled = false;
-			botao.textContent = textoOriginal;
-		}
-	}
+            return `
+                <article class="ops-servico-card" data-id-servico="${escapeHtml(servico.idServico)}" data-status="${escapeHtml(status)}">
+                    <div class="ops-servico-topo">
+                        <div class="ops-servico-info">
+                            <strong>${escapeHtml(servico.nomeExibicao)}</strong>
+                            <small>${escapeHtml(servico.nomeServico || 'Não configurado')}</small>
+                        </div>
+                        <span class="ops-status-badge" data-status="${escapeHtml(status)}">
+                            <span class="ops-status-dot"></span>${escapeHtml(status)}
+                        </span>
+                    </div>
+                    <div class="ops-servico-acoes">
+                        <button type="button" class="ops-acao-btn js-acao-servico" data-acao="iniciar" ${estaRodando ? 'disabled' : ''}><i class="ph-bold ph-play"></i> Iniciar</button>
+                        <button type="button" class="ops-acao-btn js-acao-servico" data-acao="parar" ${!estaRodando ? 'disabled' : ''}><i class="ph-bold ph-stop"></i> Parar</button>
+                        <button type="button" class="ops-acao-btn js-acao-servico" data-acao="reiniciar" ${!estaRodando ? 'disabled' : ''}><i class="ph-bold ph-arrows-clockwise"></i> Reiniciar</button>
+                    </div>
+                </article>
+            `;
+        }).join('');
+    }
 
-	function tratarCliqueTabelaVariaveis(evento) {
-		const botao = evento.target.closest('.js-editar-variavel');
-		if (!botao) {
-			return;
-		}
+    async function atualizarServicos() {
+        const resposta = await fetch(endpointListarServicos, { cache: 'no-cache' });
+        const conteudo = await resposta.json();
 
-		const linha = botao.closest('tr');
-		if (!linha) {
-			return;
-		}
-		abrirModalVariavel(linha);
-	}
+        if (!resposta.ok) {
+            alert(conteudo?.mensagem || 'Falha ao atualizar serviços.');
+            return;
+        }
 
-	function tratarCliqueTabelaServicos(evento) {
-		const botao = evento.target.closest('.js-gerenciar-servico');
-		if (!botao) {
-			return;
-		}
+        const dados = dadosResposta(conteudo);
+        servicosAtuais = Array.isArray(dados?.servicos) ? dados.servicos : [];
+        renderizarCardsServicos();
+    }
 
-		const linha = botao.closest('tr');
-		const idServico = linha?.dataset?.idServico || '';
-		if (!idServico) {
-			return;
-		}
+    async function executarAcaoServico(idServico, acao) {
+        try {
+            const resposta = await fetch(endpointAcaoServico, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+                body: JSON.stringify({ idServico, acao }),
+            });
 
-		abrirModalServico(idServico);
-	}
+            const conteudo = await resposta.json();
+            if (!resposta.ok) {
+                throw new Error(conteudo?.mensagem || 'Falha ao executar ação do serviço.');
+            }
 
-	async function tratarCliqueAcaoServicoModal(evento) {
-		const botao = evento.target.closest('.js-acao-servico-modal');
-		if (!botao) {
-			return;
-		}
-		await executarAcaoServicoModal(botao.dataset.acao || '', botao);
-	}
+            await atualizarServicos();
+        } catch (erro) {
+            alert(erro.message || 'Falha ao executar ação do serviço.');
+        }
+    }
 
-	seletorProjeto.addEventListener('change', function AoTrocarProjeto() {
-		atualizarResumoProjeto();
-		carregarVariaveisProjeto();
-	});
-	if (filtroVariavel) {
-		filtroVariavel.addEventListener('input', renderizarVariaveisFiltradas);
-	}
-	tabelaVariaveis.addEventListener('click', tratarCliqueTabelaVariaveis);
-	tabelaServicos.addEventListener('click', tratarCliqueTabelaServicos);
-	btnSalvarVariavelModal.addEventListener('click', salvarVariavelPorModal);
-	if (btnAtualizarVariaveis) {
-		btnAtualizarVariaveis.addEventListener('click', carregarVariaveisProjeto);
-	}
-	if (btnAtualizarServicos) {
-		btnAtualizarServicos.addEventListener('click', atualizarTabelaServicos);
-	}
-	if (btnAbaVariaveis) {
-		btnAbaVariaveis.addEventListener('click', function AoClicarAbaVariaveis() {
-			ativarAba('variaveis');
-		});
-	}
-	if (btnAbaServicos) {
-		btnAbaServicos.addEventListener('click', function AoClicarAbaServicos() {
-			ativarAba('servicos');
-			atualizarTabelaServicos();
-		});
-	}
-	const modalGerenciarServico = document.getElementById('modalGerenciarServicoOperacao');
-	if (modalGerenciarServico) {
-		modalGerenciarServico.addEventListener('click', tratarCliqueAcaoServicoModal);
-	}
+    btnAbaVariaveis.addEventListener('click', () => ativarAba('variaveis'));
+    btnAbaServicos.addEventListener('click', async () => {
+        ativarAba('servicos');
+        await atualizarServicos();
+    });
 
-	if (seletorProjeto.value) {
-		atualizarResumoProjeto();
-		carregarVariaveisProjeto();
-	}
+    seletorProjeto.addEventListener('change', async () => {
+        atualizarResumoProjeto();
+        await carregarVariaveisProjeto();
+    });
 
-	ativarAba('variaveis');
-	atualizarTabelaServicos();
+    filtroVariavel.addEventListener('input', renderizarVariaveisFiltradas);
+    btnAtualizarVariaveis.addEventListener('click', carregarVariaveisProjeto);
+    btnAtualizarServicos.addEventListener('click', atualizarServicos);
+
+    tabelaVariaveis.addEventListener('click', (evento) => {
+        const botao = evento.target.closest('.js-editar-variavel');
+        if (!botao) return;
+
+        const linha = botao.closest('tr');
+        if (!linha) return;
+
+        abrirModalVariavel(linha);
+    });
+
+    gridServicos.addEventListener('click', async (evento) => {
+        const botao = evento.target.closest('.js-acao-servico');
+        if (!botao || botao.disabled) return;
+
+        const card = botao.closest('.ops-servico-card');
+        const idServico = card?.dataset?.idServico;
+        const acao = botao.dataset.acao;
+
+        if (!idServico || !acao) return;
+        await executarAcaoServico(idServico, acao);
+    });
+
+    btnSalvarVariavelModal.addEventListener('click', salvarVariavelPorModal);
+
+    if (seletorProjeto.value) {
+        atualizarResumoProjeto();
+        carregarVariaveisProjeto();
+    }
+
+    atualizarServicos();
 })();
 </script>
 {% endblock %}

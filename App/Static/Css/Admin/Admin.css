@@ -1,1 +1,31 @@
-/* Estilos administrativos complementares do portal central. */
+.ops-modal-corpo {
+    display: grid;
+    gap: 0.6rem;
+}
+
+.ops-modal-desc {
+    margin: 0;
+    color: var(--hub-cor-texto-suave);
+    line-height: 1.45;
+}
+
+.admin-link-sistema {
+    margin-left: auto;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--hub-cor-primaria);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.admin-link-sistema:hover {
+    color: var(--hub-cor-primaria-escura);
+}
+
+.admin-acoes-header {
+    display: inline-flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}

@@ -511,7 +511,7 @@ class ServicoOperacoesAmbiente:
         try:
             if nome_plataforma == "windows":
                 resultado = subprocess.run(
-                    ["sc", "query", nomeServico],
+                    ["sc.exe", "query", nomeServico],
                     capture_output=True,
                     text=True,
                     encoding="utf-8",
@@ -561,14 +561,14 @@ class ServicoOperacoesAmbiente:
         nome_plataforma = platform.system().lower()
         if nome_plataforma == "windows":
             if acao == "reiniciar":
-                return [["sc", "stop", nomeServico], ["sc", "start", nomeServico]]
+                return [["sc.exe", "stop", nomeServico], ["sc.exe", "start", nomeServico]]
             verbo = {"iniciar": "start", "parar": "stop"}[acao]
-            return [["sc", verbo, nomeServico]]
+            return [["sc.exe", verbo, nomeServico]]
 
         if acao == "reiniciar":
-            return [["systemctl", "restart", nomeServico]]
+            return [["sudo", "systemctl", "restart", nomeServico]]
         verbo = {"iniciar": "start", "parar": "stop"}[acao]
-        return [["systemctl", verbo, nomeServico]]
+        return [["sudo", "systemctl", verbo, nomeServico]]
 
     def _executarComandoServico(self, comando: list[str]) -> dict[str, str | int]:
         """Executa um comando de controle de serviço e captura saída detalhada."""

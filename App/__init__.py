@@ -10,7 +10,7 @@ import os
 from datetime import timedelta
 
 from dotenv import load_dotenv
-from flask import Flask, current_app
+from flask import Flask, current_app, redirect, request, session, url_for
 from flask_login import current_user
 from werkzeug.middleware.proxy_fix import ProxyFix
 
@@ -72,6 +72,21 @@ def ResolverInteiroAmbiente(valor: str | None, padrao: int) -> int:
         return padrao
 
 
+def ResolverListaAmbiente(valor: str | None) -> list[str]:
+    """Converte string CSV de ambiente para lista sanitizada de itens.
+
+    Parametros:
+    valor: Conteudo bruto da variavel de ambiente em formato CSV.
+
+    Retorno:
+    list[str]: Lista de itens sem valores vazios.
+    """
+    if not valor:
+        return []
+
+    return [item.strip() for item in str(valor).split(",") if item and item.strip()]
+
+
 def ConfigurarSessaoCompartilhada(app: Flask) -> None:
     """Aplica configuracoes de sessao para SSO entre aplicacoes Flask/LuftCore.
 
@@ -114,6 +129,24 @@ def ConfigurarSessaoCompartilhada(app: Flask) -> None:
         app.config["REMEMBER_COOKIE_DOMAIN"] = dominio_cookie
 
 
+def ConfigurarPoliticaSsoGlobal(app: Flask) -> None:
+    """Configura comportamento global de SSO entre aplicações vinculadas.
+
+    Parametros:
+    app: Aplicacao Flask que recebera as configuracoes de SSO global.
+
+    Retorno:
+    None
+    """
+    app.config["LUFT_SSO_GLOBAL_ATIVO"] = ResolverBooleanoAmbiente(
+        os.getenv("LUFT_SSO_GLOBAL_ATIVO"),
+        True,
+    )
+    app.config["LUFT_SSO_APPS_VINCULADAS"] = ResolverListaAmbiente(
+        os.getenv("LUFT_SSO_APPS_VINCULADAS"),
+    )
+
+
 def CriarApp() -> Flask:
     """Cria e configura a aplicacao Flask do Hub Central.
 
@@ -130,6 +163,7 @@ def CriarApp() -> Flask:
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     app.secret_key = os.getenv("APP_SECRET_KEY", "hub-central-dev")
     ConfigurarSessaoCompartilhada(app)
+    ConfigurarPoliticaSsoGlobal(app)
 
     route_prefix = (os.getenv("ROUTE_PREFIX") or "").strip()
 
@@ -188,6 +222,30 @@ def CriarApp() -> Flask:
 
     app.register_blueprint(PrincipalBp)
 
+    @app.before_request
+    def RenovarSessaoSsoQuandoAutenticado() -> None:
+        """Aplica políticas globais por requisição (legado + sessão SSO).
+
+        Redireciona a rota administrativa legada para a tela consolidada
+        de sistemas e renova metadados da sessão para SSO global.
+
+        A sessão compartilhada permite o passe livre entre aplicações que
+        utilizam a mesma chave e os mesmos parâmetros de cookie.
+
+        Retorno:
+        None
+        """
+        caminho_normalizado = request.path.rstrip("/") or "/"
+        if caminho_normalizado == "/admin":
+            return redirect(url_for("Principal.PainelSistemas"), code=302)
+
+        if not app.config.get("LUFT_SSO_GLOBAL_ATIVO", True):
+            return
+
+        if current_user.is_authenticated:
+            session.permanent = True
+            session.modified = True
+
     @app.context_processor
     def InjetarPermissoesLayout():
         """Injeta dados globais de layout para navegação lateral e permissões.
@@ -205,15 +263,23 @@ def CriarApp() -> Flask:
         pode_administrar = permission_service.verificar_permissao(current_user, "ADMIN.PAINEL.VISUALIZAR")
 
         try:
+            from App.Services.Admin.ConfiguracoesHubService import ServicoConfiguracoesHub
             security_manager = current_app.extensions["luft_security"]
             servico_sistemas = ServicoSistemasHub(security_manager)
+            servico_config = ServicoConfiguracoesHub(security_manager)
             sistemas_menu = servico_sistemas.listarSistemasVisiveisParaUsuario(current_user)
-        except Exception:
+            modulos_configuracao = servico_config.listarModulosPermitidos(current_user)
+        except Exception as erro:
+            current_app.logger.warning("Erro ao carregar menu lateral: %s", str(erro))
             sistemas_menu = []
+            modulos_configuracao = []
 
         return {
             "PodeAdministrarHub": bool(pode_administrar),
             "SistemasMenu": sistemas_menu,
+            "ModulosConfiguracaoMenu": modulos_configuracao,
+            "SsoGlobalAtivo": bool(app.config.get("LUFT_SSO_GLOBAL_ATIVO", True)),
+            "SsoAplicacoesVinculadas": app.config.get("LUFT_SSO_APPS_VINCULADAS", []),
         }
 
     return app

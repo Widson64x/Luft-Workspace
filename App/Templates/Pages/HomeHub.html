@@ -2,45 +2,125 @@
 
 {% block title %}Hub Central{% endblock %}
 
+{% block extra_head %}
+{{ super() }}
+<!-- Injetando o CSS premium específico da Home -->
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/HubHome.css') }}">
+{% endblock %}
+
 {% block page_content %}
-<section class="hub-pagina">
-<div class="hub-cabecalho hub-reveal-up">
-    <h1>Hub Central Luft</h1>
-    <p>Acesse os sistemas disponiveis para o seu perfil e acompanhe o status operacional de cada aplicacao.</p>
-</div>
+{% set total_sistemas = sistemas|length %}
+{% set total_manutencao = sistemas|selectattr('emManutencao')|list|length %}
+{% set total_operacionais = total_sistemas - total_manutencao %}
 
-<div class="hub-grid-cartoes">
-    {% for sistema in sistemas %}
-    <article class="hub-cartao-sistema hub-reveal-up {% if sistema.emManutencao %}hub-cartao-manutencao{% endif %}" style="animation-delay: {{ loop.index0 * 65 }}ms;">
-        <div class="hub-cartao-topo">
-            <div class="hub-cartao-icone">
-                <i class="{{ sistema.icone or 'ph-bold ph-app-window' }}"></i>
-            </div>
-            <span class="hub-badge {{ 'hub-badge-alerta' if sistema.emManutencao else 'hub-badge-ok' }}">
-                {{ 'Em manutencao' if sistema.emManutencao else 'Operacional' }}
-            </span>
+<section class="hub-home-container">
+    <div class="hub-home-hero hub-reveal-up">
+        <div class="hub-home-hero-titulo">
+            <p class="hub-home-tag">Luft Workspace</p>
+            <h1>Portal central para acessar todo o ecossistema Luft</h1>
+            <p>Acesse de forma rápida os sistemas liberados para o seu perfil.</p>
         </div>
-        <h3>{{ sistema.nomeSistema }}</h3>
-        <p>{{ sistema.descricaoSistema or 'Sem descricao cadastrada.' }}</p>
+    </div>
 
-        {% if sistema.link and not sistema.emManutencao %}
-        <a class="hub-botao-acessar" href="{{ sistema.link }}" target="_blank" rel="noopener noreferrer">
-            Abrir sistema
-        </a>
-        {% else %}
-        <button class="hub-botao-acessar hub-botao-desabilitado" disabled>
-            {{ 'Indisponivel durante manutencao' if sistema.emManutencao else 'Link nao configurado' }}
-        </button>
+    <div class="hub-home-kpis hub-reveal-up" style="animation-delay: 80ms;">
+        <article class="hub-home-kpi">
+            <div class="hub-home-kpi-icone">
+                <i class="ph-bold ph-app-window"></i>
+            </div>
+            <div class="hub-home-kpi-conteudo">
+                <span>Sistemas disponíveis</span>
+                <strong>{{ total_sistemas }}</strong>
+            </div>
+        </article>
+        <article class="hub-home-kpi">
+            <div class="hub-home-kpi-icone">
+                <i class="ph-bold ph-check-circle"></i>
+            </div>
+            <div class="hub-home-kpi-conteudo">
+                <span>Operacionais</span>
+                <strong>{{ total_operacionais }}</strong>
+            </div>
+        </article>
+        <article class="hub-home-kpi">
+            <div class="hub-home-kpi-icone">
+                <i class="ph-bold ph-wrench"></i>
+            </div>
+            <div class="hub-home-kpi-conteudo">
+                <span>Em manutenção</span>
+                <strong>{{ total_manutencao }}</strong>
+            </div>
+        </article>
+    </div>
+
+    <div class="hub-bento-grid hub-reveal-up" style="animation-delay: 120ms;">
+        {% for sistema in sistemas %}
+        <article class="hub-bento-card" style="animation-delay: {{ loop.index0 * 90 }}ms;">
+            <div class="hub-bento-content">
+                <div class="hub-bento-header">
+                    <div class="hub-bento-icon">
+                        <i class="{{ sistema.icone or 'ph-bold ph-app-window' }}"></i>
+                    </div>
+
+                    {% if sistema.emManutencao %}
+                    <span class="bento-badge maintenance">
+                        <span class="bento-badge-dot"></span>
+                        Em manutenção
+                    </span>
+                    {% else %}
+                    <span class="bento-badge ok">
+                        <span class="bento-badge-dot"></span>
+                        Operacional
+                    </span>
+                    {% endif %}
+                </div>
+
+                <h3 class="hub-bento-title">{{ sistema.nomeSistema }}</h3>
+                <p class="hub-bento-desc">{{ sistema.descricaoSistema or 'Sistema sem descrição operacional cadastrada.' }}</p>
+
+                {% set icone_sistema = sistema.icone or '' %}
+                {% set destino_sistema = url_for('Principal.MenuPrincipal') if 'ph-house' in icone_sistema else sistema.link %}
+                {% set abrir_nova_aba = destino_sistema and destino_sistema.startswith('http') and ('ph-house' not in icone_sistema) %}
+
+                {% if destino_sistema and not sistema.emManutencao %}
+                <a
+                    class="hub-bento-action"
+                    href="{{ destino_sistema }}"
+                    {% if abrir_nova_aba %}target="_blank" rel="noopener noreferrer"{% endif %}
+                >
+                    <span>Abrir sistema</span>
+                    <i class="ph-bold ph-arrow-up-right"></i>
+                </a>
+                {% else %}
+                <button class="hub-bento-action disabled" disabled>
+                    <span>{{ 'Indisponível durante manutenção' if sistema.emManutencao else 'Link não configurado' }}</span>
+                    <i class="ph-bold ph-lock-key"></i>
+                </button>
+                {% endif %}
+            </div>
+        </article>
+        {% endfor %}
+
+        {% if total_sistemas == 0 %}
+        <section class="bento-empty" style="animation-delay: 100ms;">
+            <h3>Nenhum sistema disponível no momento</h3>
+            <p>Seu perfil ainda não possui sistemas liberados para acesso.</p>
+        </section>
         {% endif %}
-    </article>
-    {% endfor %}
-</div>
+    </div>
+</section>
 
-{% if sistemas|length == 0 %}
-<section class="hub-vazio hub-reveal-up">
-    <h3>Nenhum sistema disponivel</h3>
-    <p>Seu usuario ainda nao possui acesso a sistemas ativos no Hub.</p>
-</section>
-{% endif %}
-</section>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const cards = document.querySelectorAll('.hub-bento-card');
+    cards.forEach(card => {
+        card.addEventListener('mousemove', e => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            card.style.setProperty('--mouse-x', `${x}px`);
+            card.style.setProperty('--mouse-y', `${y}px`);
+        });
+    });
+});
+</script>
 {% endblock %}

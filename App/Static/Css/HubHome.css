@@ -1,0 +1,356 @@
+.hub-home-container {
+    display: grid;
+    gap: 1rem;
+}
+
+.hub-home-hero {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+    border-radius: var(--hub-raio-lg);
+    border: 1px solid var(--hub-cor-borda);
+    background: linear-gradient(128deg, #1a2840 0%, #1f3b63 52%, #27508a 100%);
+    color: #eef5ff;
+    padding: clamp(1rem, 3vw, 1.4rem);
+    position: relative;
+    overflow: hidden;
+}
+
+.hub-home-hero::before {
+    content: '';
+    position: absolute;
+    width: 260px;
+    height: 260px;
+    border-radius: 50%;
+    right: -70px;
+    top: -90px;
+    background: rgba(175, 208, 255, 0.18);
+    filter: blur(2px);
+}
+
+.hub-home-hero::after {
+    content: '';
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    right: 110px;
+    bottom: -130px;
+    background: rgba(137, 182, 245, 0.12);
+}
+
+.hub-home-hero-titulo {
+    position: relative;
+    z-index: 1;
+}
+
+.hub-home-tag {
+    display: inline-flex;
+    margin: 0;
+    padding: 0.24rem 0.64rem;
+    border-radius: 999px;
+    background: rgba(210, 229, 255, 0.16);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 800;
+    color: #dceaff;
+}
+
+.hub-home-hero h1 {
+    margin: 0.7rem 0 0;
+    font-size: clamp(1.45rem, 2.4vw, 2rem);
+    letter-spacing: -0.02em;
+    color: #ffffff;
+}
+
+.hub-home-hero p {
+    margin: 0.65rem 0 0;
+    max-width: 680px;
+    line-height: 1.55;
+    color: rgba(227, 239, 255, 0.92);
+}
+
+.hub-home-kpis {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+}
+
+.hub-home-kpi {
+    border-radius: 14px;
+    border: 1px solid var(--hub-cor-borda);
+    background: linear-gradient(145deg, #ffffff 0%, #f3f7ff 100%);
+    padding: 0.78rem 0.9rem;
+    box-shadow: var(--hub-sombra-leve);
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 0.62rem;
+    align-items: center;
+}
+
+.hub-home-kpi-icone {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    border: 1px solid color-mix(in oklab, #2b5fbb 34%, var(--hub-cor-borda));
+    background: color-mix(in oklab, #2b5fbb 15%, #ffffff);
+    color: #214a91;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+}
+
+.hub-home-kpi-conteudo {
+    min-width: 0;
+}
+
+.hub-home-kpi-conteudo span {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--hub-cor-texto-suave);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.hub-home-kpi-conteudo strong {
+    display: block;
+    font-size: 1.5rem;
+    margin-top: 0.12rem;
+    color: var(--hub-cor-texto);
+    line-height: 1.1;
+}
+
+.hub-bento-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(285px, 1fr));
+    gap: 0.9rem;
+}
+
+.hub-bento-card {
+    border: 1px solid var(--hub-cor-borda);
+    border-radius: var(--hub-raio-md);
+    background: linear-gradient(145deg, #ffffff 0%, #f8fbff 100%);
+    box-shadow: var(--hub-sombra-leve);
+    padding: 0.95rem;
+    position: relative;
+    overflow: hidden;
+    opacity: 0;
+    animation: hubCardEntrada 420ms ease forwards;
+    transition: transform 190ms ease, box-shadow 190ms ease, border-color 190ms ease;
+}
+
+.hub-bento-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(520px circle at var(--mouse-x, 50%) var(--mouse-y, -20%), rgba(52, 105, 194, 0.16), transparent 40%);
+    opacity: 0;
+    transition: opacity 250ms ease;
+}
+
+.hub-bento-card:hover {
+    transform: translateY(-2px);
+    border-color: color-mix(in oklab, var(--hub-cor-primaria) 38%, var(--hub-cor-borda));
+    box-shadow: var(--hub-sombra-media);
+}
+
+.hub-bento-card:hover::before {
+    opacity: 1;
+}
+
+.hub-bento-content {
+    display: grid;
+    gap: 0.7rem;
+    position: relative;
+    z-index: 1;
+    height: 100%;
+}
+
+.hub-bento-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.55rem;
+}
+
+.hub-bento-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 13px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: #244f99;
+    background: color-mix(in oklab, #2b5fbb 14%, #ffffff);
+    border: 1px solid color-mix(in oklab, #2b5fbb 30%, var(--hub-cor-borda));
+}
+
+.hub-bento-title {
+    margin: 0;
+    font-size: 1.04rem;
+}
+
+.hub-bento-desc {
+    margin: 0;
+    color: var(--hub-cor-texto-suave);
+    line-height: 1.48;
+    min-height: 2.8rem;
+}
+
+.hub-bento-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.42rem;
+    margin-top: auto;
+    border: none;
+    text-decoration: none;
+    border-radius: 10px;
+    padding: 0.62rem 0.9rem;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    color: #ffffff;
+    background: linear-gradient(145deg, #214f9a, #2b66bf);
+    transition: transform 170ms ease, box-shadow 170ms ease;
+}
+
+.hub-bento-action:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 12px 20px rgba(33, 79, 154, 0.28);
+}
+
+.hub-bento-action.disabled {
+    background: #cfd8e1;
+    color: #5f7286;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.bento-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 0.22rem 0.55rem;
+    border: 1px solid transparent;
+}
+
+.bento-badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+}
+
+.bento-badge.ok {
+    color: #1f4f99;
+    background: color-mix(in oklab, var(--hub-cor-primaria) 14%, transparent);
+    border-color: color-mix(in oklab, var(--hub-cor-primaria) 40%, transparent);
+}
+
+.bento-badge.ok .bento-badge-dot {
+    background: var(--hub-cor-primaria);
+}
+
+.bento-badge.maintenance {
+    color: #9f4f06;
+    background: color-mix(in oklab, #e17a1b 16%, transparent);
+    border-color: color-mix(in oklab, #e17a1b 45%, transparent);
+}
+
+.bento-badge.maintenance .bento-badge-dot {
+    background: #e17a1b;
+}
+
+.bento-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    border: 1px dashed var(--hub-cor-borda-forte);
+    border-radius: var(--hub-raio-md);
+    background: var(--hub-cor-superficie-2);
+    padding: 1.6rem 1.1rem;
+}
+
+.bento-empty h3 {
+    margin: 0;
+}
+
+.bento-empty p {
+    margin: 0.45rem 0 0;
+    color: var(--hub-cor-texto-suave);
+}
+
+@keyframes hubCardEntrada {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 940px) {
+    .hub-home-kpis {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 700px) {
+    .hub-bento-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+[data-theme='dark'] .hub-home-hero {
+    border-color: var(--hub-cor-borda);
+    background: linear-gradient(130deg, #182335 0%, #1f3150 54%, #244578 100%);
+}
+
+[data-theme='dark'] .hub-home-tag {
+    background: rgba(190, 216, 255, 0.14);
+    color: #d6e6ff;
+}
+
+[data-theme='dark'] .hub-home-hero h1 {
+    color: #eef3fa;
+}
+
+[data-theme='dark'] .hub-home-hero p {
+    color: #b7c7d9;
+}
+
+[data-theme='dark'] .hub-home-kpi {
+    border-color: var(--hub-cor-borda);
+    background: linear-gradient(145deg, #1a2738 0%, #1f2f43 100%);
+}
+
+[data-theme='dark'] .hub-home-kpi-icone {
+    background: color-mix(in oklab, #4d7fcf 24%, #1f2f43);
+    border-color: color-mix(in oklab, #4d7fcf 42%, var(--hub-cor-borda));
+    color: #d5e4ff;
+}
+
+[data-theme='dark'] .hub-bento-card {
+    background: linear-gradient(145deg, #1b2a3d 0%, #1f3046 100%);
+    border-color: var(--hub-cor-borda);
+}
+
+[data-theme='dark'] .hub-bento-icon {
+    background: color-mix(in oklab, #4d7fcf 24%, #1f3046);
+    border-color: color-mix(in oklab, #4d7fcf 42%, var(--hub-cor-borda));
+    color: #d8e8ff;
+}
+
+[data-theme='dark'] .hub-bento-action.disabled {
+    background: #3d4f65;
+    color: #c9d8e9;
+}
