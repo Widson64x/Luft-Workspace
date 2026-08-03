@@ -13,9 +13,9 @@ from luftcore.modules.seguranca.services import LuftPermissionService
 
 MODULOS_CONFIGURACAO = [
 	{
-		"id": "aplicacoes",
-		"nome": "Configurar Aplicações",
-		"descricao": "Gerencie sistemas, links, permissões base e status de manutenção no catálogo central.",
+		"id": "aplicacoes-ambiente",
+		"nome": "Aplicações & Ambiente",
+		"descricao": "Gerencie sistemas, catálogo central, variáveis de ambiente e ações de serviço do servidor.",
 		"icone": "ph-bold ph-app-window",
 		"permissao": "ADMIN.PAINEL.VISUALIZAR",
 		"endpoint": "Principal.PainelSistemas",
@@ -31,16 +31,6 @@ MODULOS_CONFIGURACAO = [
 		"endpoint": "Seguranca.visualizar_gerenciador",
 		"status": "Disponível",
 		"acao": "Abrir segurança",
-	},
-	{
-		"id": "operacoes-ambiente",
-		"nome": "Operações de Ambiente",
-		"descricao": "Visualize variáveis permitidas e execute ações de serviço com governança operacional.",
-		"icone": "ph-bold ph-terminal-window",
-		"permissao": "ADMIN.SEGURANCA.VISUALIZAR",
-		"endpoint": "Principal.ConfiguracoesOperacoesAmbiente",
-		"status": "Disponível",
-		"acao": "Abrir operações",
 	},
 	{
 		"id": "apis",

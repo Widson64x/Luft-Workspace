@@ -5,7 +5,7 @@
 <section class="hub-pagina">
 <div class="hub-cabecalho hub-reveal-up">
 	<h1>Configurações do Hub</h1>
-	<p>Visualize apenas os módulos para os quais o seu perfil possui permissão ativa.</p>
+	<p>Painel central de módulos administrativos, com exibição baseada em permissões ativas do seu perfil.</p>
 </div>
 
 {% if modulosPermitidos %}
@@ -21,7 +21,7 @@
 		<h3>{{ modulo.nome }}</h3>
 		<p>{{ modulo.descricao }}</p>
 		{% if modulo.status == 'Em breve' %}
-		<button class="hub-botao-acessar hub-botao-desabilitado" type="button" disabled>Indisponível</button>
+		<button class="hub-botao-acessar hub-botao-desabilitado" type="button" disabled>Em construção</button>
 		{% else %}
 		<a class="hub-botao-acessar" href="{{ modulo.href }}">{{ modulo.acao }}</a>
 		{% endif %}
@@ -31,7 +31,7 @@
 {% else %}
 <section class="hub-vazio hub-reveal-up">
 	<h3>Sem módulos disponíveis</h3>
-	<p>Seu perfil não possui permissões para visualizar funcionalidades de configuração.</p>
+	<p>Seu perfil não possui permissões para visualizar funcionalidades de configuração neste ambiente.</p>
 </section>
 {% endif %}
 </section>
