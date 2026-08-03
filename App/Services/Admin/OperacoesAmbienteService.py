@@ -98,7 +98,7 @@ class ServicoOperacoesAmbiente:
             "variavelCaminhoProjeto": "WORKSPACE_PROJECT_DIR",
             "variaveisPermitidas": _VARIAVEIS_PADRAO + (
                 VariavelPermitida("LUFT_USAR_PREFIXO_MENSAGENS", "Ativa prefixo no endpoint de mensagens."),
-                VariavelPermitida("WORKSPACE_SERVICE_NAME", "Nome do servico do Luft-Workspace."),
+                VariavelPermitida("LUFT_WORKSPACE_SERVICE_NAME", "Nome do servico do Luft-Workspace."),
                 VariavelPermitida("LUFT_CONTROL_SERVICE_NAME", "Nome do servico do Luft-Control."),
                 VariavelPermitida("LUFT_CONNECTAIR_SERVICE_NAME", "Nome do servico do Luft-ConnectAir."),
                 VariavelPermitida("LUFT_DOCS_WEB_SERVICE_NAME", "Nome do servico do Luft-Docs Web."),
@@ -315,6 +315,21 @@ class ServicoOperacoesAmbiente:
             historico.append(self._executarComandoServico(comando))
 
         status_final = self._consultarStatusServico(nome_servico)
+
+        acao_para_status_esperado = {
+            "iniciar": "RUNNING",
+            "reiniciar": "RUNNING",
+            "parar": "STOPPED",
+        }
+        status_esperado = acao_para_status_esperado.get(acao_normalizada)
+        if status_esperado and status_final != status_esperado:
+            ultimo_detalhe = ""
+            if historico:
+                ultimo_detalhe = str(historico[-1].get("saida") or "").strip()
+            if not ultimo_detalhe:
+                ultimo_detalhe = f"Status final retornado: {status_final}."
+            raise ValueError(f"Falha ao executar a ação '{acao_normalizada}' no serviço '{nome_servico}'. {ultimo_detalhe}")
+
         return {
             "idServico": definicao_servico.idServico,
             "nomeServico": nome_servico,
@@ -542,6 +557,11 @@ class ServicoOperacoesAmbiente:
                 return "STOPPED"
             if saida == "unknown":
                 return "NAO_ENCONTRADO"
+
+            # Alguns ambientes retornam mensagem textual em vez de "unknown".
+            if "could not be found" in saida or "not-found" in saida or "not found" in saida:
+                return "NAO_ENCONTRADO"
+
             return "DESCONHECIDO"
         except FileNotFoundError:
             return "DESCONHECIDO"
@@ -566,9 +586,9 @@ class ServicoOperacoesAmbiente:
             return [["sc.exe", verbo, nomeServico]]
 
         if acao == "reiniciar":
-            return [["sudo", "systemctl", "restart", nomeServico]]
+            return [["systemctl", "restart", nomeServico]]
         verbo = {"iniciar": "start", "parar": "stop"}[acao]
-        return [["sudo", "systemctl", verbo, nomeServico]]
+        return [["systemctl", verbo, nomeServico]]
 
     def _executarComandoServico(self, comando: list[str]) -> dict[str, str | int]:
         """Executa um comando de controle de serviço e captura saída detalhada."""
