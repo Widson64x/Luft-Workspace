@@ -542,8 +542,12 @@ class ServicoOperacoesAmbiente:
                     return "STOPPED"
                 return "DESCONHECIDO"
 
+            executavel_systemctl = self._resolverExecutavelSistema("systemctl")
+            if not executavel_systemctl:
+                return "DESCONHECIDO"
+
             resultado = subprocess.run(
-                ["systemctl", "is-active", nomeServico],
+                [executavel_systemctl, "is-active", nomeServico],
                 capture_output=True,
                 text=True,
                 encoding="utf-8",
@@ -585,10 +589,35 @@ class ServicoOperacoesAmbiente:
             verbo = {"iniciar": "start", "parar": "stop"}[acao]
             return [["sc.exe", verbo, nomeServico]]
 
+        executavel_systemctl = self._resolverExecutavelSistema("systemctl") or "systemctl"
+        executavel_sudo = self._resolverExecutavelSistema("sudo")
+
+        prefixo_comando: list[str] = []
+        if executavel_sudo:
+            prefixo_comando = [executavel_sudo, "-n"]
+
         if acao == "reiniciar":
-            return [["systemctl", "restart", nomeServico]]
+            return [prefixo_comando + [executavel_systemctl, "restart", nomeServico]]
         verbo = {"iniciar": "start", "parar": "stop"}[acao]
-        return [["systemctl", verbo, nomeServico]]
+        return [prefixo_comando + [executavel_systemctl, verbo, nomeServico]]
+
+    def _resolverExecutavelSistema(self, nomeExecutavel: str) -> str:
+        """Resolve o caminho de um executável crítico mesmo em ambientes com PATH reduzido."""
+        caminho_resolvido = shutil.which(nomeExecutavel)
+        if caminho_resolvido:
+            return caminho_resolvido
+
+        candidatos_linux = (
+            f"/usr/bin/{nomeExecutavel}",
+            f"/bin/{nomeExecutavel}",
+            f"/usr/sbin/{nomeExecutavel}",
+            f"/sbin/{nomeExecutavel}",
+        )
+        for candidato in candidatos_linux:
+            if Path(candidato).exists():
+                return candidato
+
+        return ""
 
     def _executarComandoServico(self, comando: list[str]) -> dict[str, str | int]:
         """Executa um comando de controle de serviço e captura saída detalhada."""
