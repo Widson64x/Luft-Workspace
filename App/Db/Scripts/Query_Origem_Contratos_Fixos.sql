@@ -1,7 +1,7 @@
 WITH 
 ContratosCombinados AS (
     SELECT 
-        12 AS Codigo_EmpresaMatriz, '1' AS Prefixo_Integracao,
+        1 AS Codigo_EmpresaMatriz, '1' AS Prefixo_Integracao,
         C3_FILIAL, C3_NUM, C3_FORNECE, C3_LOJA, C3_ITEM, C3_PRODUTO,
         C3_QUANT, C3_PRECO, C3_TOTAL, C3_DATPRI AS Data_Inicio_Vigencia,
         C3_DATPRF AS Data_Fim_Vigencia, C3_EMISSAO, C3_CC, C3_USER, C3_OBS, C3_MSBLQL, C3_COND,
@@ -12,7 +12,7 @@ ContratosCombinados AS (
       -- AND C3_EMISSAO <= TO_CHAR(SYSDATE, 'YYYYMMDD')
     UNION ALL
     SELECT 
-        17 AS Codigo_EmpresaMatriz, '2' AS Prefixo_Integracao,
+        2 AS Codigo_EmpresaMatriz, '2' AS Prefixo_Integracao,
         C3_FILIAL, C3_NUM, C3_FORNECE, C3_LOJA, C3_ITEM, C3_PRODUTO,
         C3_QUANT, C3_PRECO, C3_TOTAL, C3_DATPRI AS Data_Inicio_Vigencia,
         C3_DATPRF AS Data_Fim_Vigencia, C3_EMISSAO, C3_CC, C3_USER, C3_OBS, C3_MSBLQL, C3_COND,
@@ -27,9 +27,9 @@ ContratosRanqueados AS (
     FROM ContratosCombinados cc
 ),
 Aprovacoes AS (
-    SELECT 12 AS Codigo_EmpresaMatriz, CR_FILIAL, CR_NUM, CR_TIPO, CR_USERLIB, CR_DATALIB, CR_STATUS, R_E_C_N_O_ FROM U_C1JTKS_PR.SCR120 WHERE D_E_L_E_T_ <> '*'
+    SELECT 1 AS Codigo_EmpresaMatriz, CR_FILIAL, CR_NUM, CR_TIPO, CR_USERLIB, CR_DATALIB, CR_STATUS, R_E_C_N_O_ FROM U_C1JTKS_PR.SCR120 WHERE CR_TIPO = 'AE' AND D_E_L_E_T_ <> '*'
     UNION ALL
-    SELECT 17 AS Codigo_EmpresaMatriz, CR_FILIAL, CR_NUM, CR_TIPO, CR_USERLIB, CR_DATALIB, CR_STATUS, R_E_C_N_O_ FROM U_C1JTKS_PR.SCR170 WHERE D_E_L_E_T_ <> '*'
+    SELECT 2 AS Codigo_EmpresaMatriz, CR_FILIAL, CR_NUM, CR_TIPO, CR_USERLIB, CR_DATALIB, CR_STATUS, R_E_C_N_O_ FROM U_C1JTKS_PR.SCR170 WHERE CR_TIPO = 'AE' AND D_E_L_E_T_ <> '*'
 ),
 ContratosComAprovacao AS (
     SELECT cr.*, a.CR_TIPO, a.CR_USERLIB, a.CR_DATALIB, a.CR_STATUS,
@@ -98,7 +98,7 @@ SELECT
     ca.C3_OBS AS Observacao
 
 FROM ContratosComAprovacao ca
-LEFT JOIN U_C1JTKS_PR.SB1010 sb ON TRIM(sb.B1_COD) = TRIM(ca.C3_PRODUTO) AND sb.D_E_L_E_T_ <> '*'
+LEFT JOIN U_C1JTKS_PR.SB1010 sb ON sb.B1_COD = ca.C3_PRODUTO AND sb.D_E_L_E_T_ <> '*'
 LEFT JOIN U_C1JTKS_PR.SE4010 s ON s.E4_CODIGO = ca.C3_COND AND s.D_E_L_E_T_ <> '*'
 LEFT JOIN UsuariosNomes uc ON uc.Codigo_Usuario = TRIM(ca.C3_USER)
 LEFT JOIN UsuariosNomes uap ON uap.Codigo_Usuario = TRIM(ca.CR_USERLIB)

@@ -2,46 +2,87 @@ MERGE INTO Luftinforma.dbo.ContaPagarFixo AS Destino
 
 USING (
     SELECT 
-        (SELECT TOP 1 Codigo_Empresa FROM LuftInforma.dbo.Empresa 
-         WHERE Codigo_Integracao = @{Codigo_Empresa} 
-           AND (Codigo_EmpresaMatriz = @{Codigo_EmpresaMatriz} OR Codigo_Empresa = @{Codigo_EmpresaMatriz})) AS Codigo_Empresa,
-           
-        @{Codigo_EmpresaMatriz} AS Codigo_EmpresaMatriz,
-        
-        (SELECT TOP 1 Codigo_Fornecedor FROM LuftInforma.dbo.FornecedorIntegracaoSistema
-         WHERE Codigo_Integracao = @{Codigo_Integracao} 
-           AND Nome_SistemaOrigem = 'MICROSIGA') AS Codigo_Fornecedor,
-           
-        (SELECT TOP 1 ISNULL(Codigo_ContaContabilPai, Codigo_ContaContabil) 
-         FROM LuftInforma.dbo.PlanoConta 
-         WHERE Codigo_ContaContabil = TRY_CAST(@{Codigo_ContaContabil} AS NUMERIC(15,0))) AS Codigo_ContaContabil,
-         
-        (SELECT TOP 1 Codigo_CentroCusto FROM LuftInforma.dbo.CentroCusto 
-         WHERE Codigo_CentroCusto = TRY_CAST(@{Codigo_CentroCusto} AS NUMERIC(10,0))) AS Codigo_CentroCusto,
-         
-        @{Opcao_TipoDocumento} AS Opcao_TipoDocumento,
-        @{Numero_Contrato} AS Numero_Contrato,
-        @{Sequencia_Item} AS Sequencia_Item,
-        @{Codigo_Item} AS Codigo_Item,
-        @{Descricao_Item} AS Descricao_Item,
-        @{Data_Emissao_Contrato} AS Data_Emissao_Contrato,
-        @{Data_Aprovacao} AS Data_Aprovacao,
-        @{Valor_Total_Contrato} AS Valor_Total_Contrato,
-        @{Qtd_Total_Contratada} AS Qtd_Total_Contratada,
-        @{Qtd_Ja_Executada} AS Qtd_Ja_Executada,
-        @{Saldo_Disponivel} AS Saldo_Disponivel,
-        @{Codigo_Status_SCR} AS Codigo_Status_SCR,
-        @{Status_Bloqueio_Protheus} AS Status_Bloqueio_Protheus,
-        @{Situacao_Contrato} AS Situacao_Contrato,
-        @{Codigo_UltimoAprovador} AS Codigo_UltimoAprovador,
-        @{Login_UltimoAprovador} AS Login_UltimoAprovador,
-        @{Nome_UltimoAprovador} AS Nome_UltimoAprovador,
-        @{Codigo_UsuarioCriador} AS Codigo_UsuarioCriador,
-        @{Login_UsuarioCriador} AS Login_UsuarioCriador,
-        @{Nome_UsuarioCriador} AS Nome_UsuarioCriador,
-        @{Codigo_CondicaoPagamento} AS Codigo_CondicaoPagamento,
-        @{DescricaoCondicaoPagamento} AS DescricaoCondicaoPagamento,
-        @{Observacao} AS Observacao
+        emp.Codigo_Empresa AS Codigo_Empresa,
+        p.Codigo_EmpresaMatriz AS Codigo_EmpresaMatriz,
+        forn.Codigo_Fornecedor AS Codigo_Fornecedor,
+        ISNULL(pc.Codigo_ContaContabilPai, pc.Codigo_ContaContabil) AS Codigo_ContaContabil,
+        cc.Codigo_CentroCusto AS Codigo_CentroCusto,
+        p.Opcao_TipoDocumento,
+        p.Numero_Contrato,
+        p.Sequencia_Item,
+        p.Codigo_Item,
+        p.Descricao_Item,
+        p.Data_Emissao_Contrato,
+        p.Data_Aprovacao,
+        p.Valor_Total_Contrato,
+        p.Qtd_Total_Contratada,
+        p.Qtd_Ja_Executada,
+        p.Saldo_Disponivel,
+        p.Codigo_Status_SCR,
+        p.Status_Bloqueio_Protheus,
+        p.Situacao_Contrato,
+        p.Codigo_UltimoAprovador,
+        p.Login_UltimoAprovador,
+        p.Nome_UltimoAprovador,
+        p.Codigo_UsuarioCriador,
+        p.Login_UsuarioCriador,
+        p.Nome_UsuarioCriador,
+        p.Codigo_CondicaoPagamento,
+        p.DescricaoCondicaoPagamento,
+        p.Observacao
+    FROM (
+        SELECT 
+            @{Codigo_Empresa} AS Codigo_Empresa_Param,
+            @{Codigo_EmpresaMatriz} AS Codigo_EmpresaMatriz,
+            @{Codigo_Integracao} AS Codigo_Integracao,
+            @{Codigo_ContaContabil} AS Codigo_ContaContabil_Param,
+            @{Codigo_CentroCusto} AS Codigo_CentroCusto_Param,
+            @{Opcao_TipoDocumento} AS Opcao_TipoDocumento,
+            @{Numero_Contrato} AS Numero_Contrato,
+            @{Sequencia_Item} AS Sequencia_Item,
+            @{Codigo_Item} AS Codigo_Item,
+            @{Descricao_Item} AS Descricao_Item,
+            @{Data_Emissao_Contrato} AS Data_Emissao_Contrato,
+            @{Data_Aprovacao} AS Data_Aprovacao,
+            @{Valor_Total_Contrato} AS Valor_Total_Contrato,
+            @{Qtd_Total_Contratada} AS Qtd_Total_Contratada,
+            @{Qtd_Ja_Executada} AS Qtd_Ja_Executada,
+            @{Saldo_Disponivel} AS Saldo_Disponivel,
+            @{Codigo_Status_SCR} AS Codigo_Status_SCR,
+            @{Status_Bloqueio_Protheus} AS Status_Bloqueio_Protheus,
+            @{Situacao_Contrato} AS Situacao_Contrato,
+            @{Codigo_UltimoAprovador} AS Codigo_UltimoAprovador,
+            @{Login_UltimoAprovador} AS Login_UltimoAprovador,
+            @{Nome_UltimoAprovador} AS Nome_UltimoAprovador,
+            @{Codigo_UsuarioCriador} AS Codigo_UsuarioCriador,
+            @{Login_UsuarioCriador} AS Login_UsuarioCriador,
+            @{Nome_UsuarioCriador} AS Nome_UsuarioCriador,
+            @{Codigo_CondicaoPagamento} AS Codigo_CondicaoPagamento,
+            @{DescricaoCondicaoPagamento} AS DescricaoCondicaoPagamento,
+            @{Observacao} AS Observacao
+    ) p
+    OUTER APPLY (
+        SELECT TOP 1 Codigo_Empresa 
+        FROM LuftInforma.dbo.Empresa 
+        WHERE Codigo_Integracao = p.Codigo_Empresa_Param 
+          AND (Codigo_EmpresaMatriz = p.Codigo_EmpresaMatriz OR Codigo_Empresa = p.Codigo_EmpresaMatriz)
+    ) emp
+    OUTER APPLY (
+        SELECT TOP 1 Codigo_Fornecedor 
+        FROM LuftInforma.dbo.FornecedorIntegracaoSistema
+        WHERE Codigo_Integracao = p.Codigo_Integracao 
+          AND Nome_SistemaOrigem = 'MICROSIGA'
+    ) forn
+    OUTER APPLY (
+        SELECT TOP 1 Codigo_ContaContabilPai, Codigo_ContaContabil 
+        FROM LuftInforma.dbo.PlanoConta 
+        WHERE Codigo_ContaContabil = TRY_CAST(p.Codigo_ContaContabil_Param AS NUMERIC(15,0))
+    ) pc
+    OUTER APPLY (
+        SELECT TOP 1 Codigo_CentroCusto 
+        FROM LuftInforma.dbo.CentroCusto 
+        WHERE Codigo_CentroCusto = TRY_CAST(p.Codigo_CentroCusto_Param AS NUMERIC(10,0))
+    ) cc
 ) AS Origem 
 
 ON (

@@ -96,6 +96,7 @@ class ServicoOrquestracaoBanco:
 
         with GetSqlServerEngine().connect() as conexao:
             linha = conexao.execute(consulta).mappings().first()
+            conexao.rollback()
 
         diagnostico = {
             "tabelaConexaoExiste": bool(linha["TabelaConexaoExiste"]) if linha else False,
@@ -154,6 +155,7 @@ class ServicoOrquestracaoBanco:
 
         with GetSqlServerEngine().connect() as conexao:
             linhas = conexao.execute(consulta).mappings().all()
+            conexao.rollback()
 
         retorno: list[dict[str, Any]] = []
         for linha in linhas:
@@ -213,6 +215,7 @@ class ServicoOrquestracaoBanco:
 
         with GetSqlServerEngine().connect() as conexao:
             linhas = conexao.execute(consulta).mappings().all()
+            conexao.rollback()
 
         retorno: list[dict[str, Any]] = []
         for linha in linhas:
@@ -284,6 +287,7 @@ class ServicoOrquestracaoBanco:
 
         with GetSqlServerEngine().connect() as conexao:
             linha = conexao.execute(consulta, {"idProcedimento": int(idProcedimento)}).mappings().first()
+            conexao.rollback()
 
         if not linha:
             raise ValueError("Tarefa informada nao foi encontrada.")
@@ -343,6 +347,7 @@ class ServicoOrquestracaoBanco:
                 consulta,
                 {"idProcedimento": int(idProcedimento), "limite": int(max(limite, 1))},
             ).mappings().all()
+            conexao.rollback()
 
         retorno: list[dict[str, Any]] = []
         for linha in linhas:
@@ -882,34 +887,24 @@ class ServicoOrquestracaoBanco:
                 colunas_origem = list(resultado_origem.keys())
                 mapa_campos = workflow["mapaCampos"] or self._sugerirMapaCampos(colunas_origem)
 
-                primeira_lote = resultado_origem.mappings().fetchmany(workflow["loteLinhas"])
-                if not primeira_lote:
+                lote_origem = resultado_origem.mappings().fetchmany(workflow["loteLinhas"])
+                if not lote_origem:
                     raise ValueError("A query de origem nao retornou registros para processar.")
 
-                linhas_transformadas = self._transformarLinhas(primeira_lote, mapa_campos)
-                total_origem += len(primeira_lote)
-                total_processadas += len(linhas_transformadas)
+                while lote_origem:
+                    linhas_transformadas = self._transformarLinhas(lote_origem, mapa_campos)
+                    total_origem += len(lote_origem)
+                    total_processadas += len(linhas_transformadas)
 
-                with engine_destino.begin() as conexao_destino:
-                    total_escritas += self._escreverDestino(
-                        conexao_destino=conexao_destino,
-                        engineDestino=engine_destino,
-                        workflow=workflow,
-                        linhasTransformadas=linhas_transformadas,
-                    )
-
-                    lote_origem = resultado_origem.mappings().fetchmany(workflow["loteLinhas"])
-                    while lote_origem:
-                        linhas_transformadas = self._transformarLinhas(lote_origem, mapa_campos)
-                        total_origem += len(lote_origem)
-                        total_processadas += len(linhas_transformadas)
+                    with engine_destino.begin() as conexao_destino:
                         total_escritas += self._escreverDestino(
                             conexao_destino=conexao_destino,
                             engineDestino=engine_destino,
                             workflow=workflow,
                             linhasTransformadas=linhas_transformadas,
                         )
-                        lote_origem = resultado_origem.mappings().fetchmany(workflow["loteLinhas"])
+
+                    lote_origem = resultado_origem.mappings().fetchmany(workflow["loteLinhas"])
 
             data_fim = self._obterAgoraBrasilia()
             duracao_ms = int((data_fim - data_inicio).total_seconds() * 1000)
@@ -1061,6 +1056,7 @@ class ServicoOrquestracaoBanco:
         )
         with GetSqlServerEngine().connect() as conexao:
             linhas = conexao.execute(consulta, {"idWorkflow": int(idWorkflow)}).mappings().all()
+            conexao.rollback()
 
         retorno: list[dict[str, Any]] = []
         for linha in linhas:
@@ -1834,6 +1830,7 @@ class ServicoOrquestracaoBanco:
         )
         with GetSqlServerEngine().connect() as conexao:
             linha = conexao.execute(consulta, {"idWorkflow": int(idWorkflow)}).mappings().first()
+            conexao.rollback()
         if not linha:
             return "MANUAL", {}, None, False
         return (
@@ -2022,6 +2019,7 @@ class ServicoOrquestracaoBanco:
         )
         with GetSqlServerEngine().connect() as conexao:
             ids_devidos = conexao.execute(consulta, {"agora": agora}).scalars().all()
+            conexao.rollback()
 
         resultados: list[dict[str, Any]] = []
         for id_wf in ids_devidos:
