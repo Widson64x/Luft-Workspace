@@ -32,6 +32,8 @@ from App.Models.OrquestracaoBancoModel import (
 
 logger = logging.getLogger(__name__)
 
+FUSO_BRASILIA = timezone(timedelta(hours=-3))
+
 
 class EstruturaOrquestracaoBancoNaoConfiguradaError(RuntimeError):
     """Indica ausência da estrutura SQL obrigatória da central de orquestração."""
@@ -39,6 +41,11 @@ class EstruturaOrquestracaoBancoNaoConfiguradaError(RuntimeError):
 
 class ServicoOrquestracaoBanco:
     """Serviço de aplicação para tarefas e orquestração de bancos de dados."""
+
+    @staticmethod
+    def _obterAgoraBrasilia() -> datetime:
+        """Retorna a data e hora atual no fuso horario de Brasilia (UTC-3) sem tzinfo para persistencia no SQL Server."""
+        return datetime.now(FUSO_BRASILIA).replace(tzinfo=None)
 
     _TABELA_CONEXAO = TbBancoConexao.NOME_TABELA_QUALIFICADA
     _TABELA_WORKFLOW = TbBancoTarefa.NOME_TABELA_QUALIFICADA
@@ -462,7 +469,7 @@ class ServicoOrquestracaoBanco:
                     Parametros_Conexao_Json = :parametrosConexao,
                     Ativo = :ativo,
                     Observacao = :observacao,
-                    Atualizado_Em = SYSDATETIME(),
+                    Atualizado_Em = :atualizadoEm,
                     Atualizado_Por = :atualizadoPor
                 WHERE Id_Conexao = :idConexao
                 """
@@ -480,6 +487,7 @@ class ServicoOrquestracaoBanco:
                         "parametrosConexao": parametros_conexao,
                         "ativo": 1 if ativo else 0,
                         "observacao": observacao,
+                        "atualizadoEm": self._obterAgoraBrasilia(),
                         "atualizadoPor": usuarioAtual,
                     },
                 )
@@ -516,14 +524,15 @@ class ServicoOrquestracaoBanco:
                 :parametrosConexao,
                 :ativo,
                 :observacao,
-                SYSDATETIME(),
-                SYSDATETIME(),
+                :criadoEm,
+                :atualizadoEm,
                 :criadoPor,
                 :atualizadoPor
             )
             """
         )
 
+        agora = self._obterAgoraBrasilia()
         with GetSqlServerEngine().begin() as conexao:
             linha = conexao.execute(
                 consulta_insert,
@@ -536,6 +545,8 @@ class ServicoOrquestracaoBanco:
                     "parametrosConexao": parametros_conexao,
                     "ativo": 1 if ativo else 0,
                     "observacao": observacao,
+                    "criadoEm": agora,
+                    "atualizadoEm": agora,
                     "criadoPor": usuarioAtual,
                     "atualizadoPor": usuarioAtual,
                 },
@@ -614,7 +625,7 @@ class ServicoOrquestracaoBanco:
         self._validarSintaxeWorkflow(workflow)
 
         proxima_execucao = self._calcularProximaExecucao(
-            baseUtc=datetime.now(),
+            baseUtc=self._obterAgoraBrasilia(),
             tipoAgendamento=workflow["tipoAgendamento"],
             configuracaoAgendamento=workflow["configuracaoAgendamento"],
             intervaloMinutos=workflow["intervaloMinutos"],
@@ -644,7 +655,7 @@ class ServicoOrquestracaoBanco:
                     Lote_Linhas = :loteLinhas,
                     Ativo = :ativo,
                     Proxima_Execucao_Em = :proximaExecucaoEm,
-                    Atualizado_Em = SYSDATETIME(),
+                    Atualizado_Em = :atualizadoEm,
                     Atualizado_Por = :atualizadoPor
                 WHERE Id_Workflow = :idWorkflow
                 """
@@ -708,8 +719,8 @@ class ServicoOrquestracaoBanco:
                 :ativo,
                 :proximaExecucaoEm,
                 'NUNCA_EXECUTADO',
-                SYSDATETIME(),
-                SYSDATETIME(),
+                :criadoEm,
+                :atualizadoEm,
                 :criadoPor,
                 :atualizadoPor
             )
@@ -847,7 +858,7 @@ class ServicoOrquestracaoBanco:
         engine_origem = self._obterEngineConexao(workflow["idConexaoOrigem"])
         engine_destino = self._obterEngineConexao(workflow["idConexaoDestino"])
 
-        data_inicio = datetime.now()
+        data_inicio = self._obterAgoraBrasilia()
         id_execucao = self._registrarInicioExecucao(idProcedimento, usuarioAtual, data_inicio)
         total_origem = 0
         total_processadas = 0
@@ -900,7 +911,7 @@ class ServicoOrquestracaoBanco:
                         )
                         lote_origem = resultado_origem.mappings().fetchmany(workflow["loteLinhas"])
 
-            data_fim = datetime.now()
+            data_fim = self._obterAgoraBrasilia()
             duracao_ms = int((data_fim - data_inicio).total_seconds() * 1000)
             mensagem = f"Tarefa executada com sucesso. Linhas lidas: {total_origem}. Linhas escritas: {total_escritas}."
             self._registrarLogExecucao(id_execucao, "FIM", "INFO", mensagem, None)
@@ -927,7 +938,7 @@ class ServicoOrquestracaoBanco:
                 "mensagem": mensagem,
             }
         except Exception as erro_execucao:
-            data_fim = datetime.now()
+            data_fim = self._obterAgoraBrasilia()
             duracao_ms = int((data_fim - data_inicio).total_seconds() * 1000)
             mensagem = f"Falha na execução: {str(erro_execucao)}"
             self._registrarLogExecucao(id_execucao, "ERRO", "ERROR", mensagem, {"stack": traceback.format_exc(limit=20)})
@@ -947,6 +958,7 @@ class ServicoOrquestracaoBanco:
 
     def _montarParametrosPersistenciaWorkflow(self, workflow: dict[str, Any], usuarioAtual: str, proximaExecucao: datetime | None) -> dict[str, Any]:
         """Monta parametros comuns de persistencia da tarefa."""
+        agora = self._obterAgoraBrasilia()
         return {
             "idWorkflow": workflow["idWorkflow"],
             "nomeWorkflow": workflow["nomeProcedimento"],
@@ -967,6 +979,8 @@ class ServicoOrquestracaoBanco:
             "loteLinhas": workflow["loteLinhas"],
             "ativo": 1 if workflow["ativo"] else 0,
             "proximaExecucaoEm": proximaExecucao,
+            "criadoEm": agora,
+            "atualizadoEm": agora,
             "criadoPor": usuarioAtual,
             "atualizadoPor": usuarioAtual,
         }
@@ -1739,7 +1753,7 @@ class ServicoOrquestracaoBanco:
                 Status_Ultima_Execucao = :statusExecucao,
                 Total_Linhas_Ultima_Execucao = :totalLinhasEscritas,
                 Mensagem_Ultima_Execucao = :mensagemResumo,
-                Atualizado_Em = SYSDATETIME()
+                Atualizado_Em = :atualizadoEm
             WHERE Id_Workflow = :idWorkflow
             """
         )
@@ -1768,6 +1782,7 @@ class ServicoOrquestracaoBanco:
                     "statusExecucao": statusExecucao,
                     "totalLinhasEscritas": int(totalLinhasEscritas),
                     "mensagemResumo": mensagemResumo[:1000],
+                    "atualizadoEm": self._obterAgoraBrasilia(),
                 },
             )
 
@@ -1791,7 +1806,7 @@ class ServicoOrquestracaoBanco:
                 :nivelLog,
                 :mensagemLog,
                 :payloadLog,
-                SYSDATETIME()
+                :criadoEm
             )
             """
         )
@@ -1804,6 +1819,7 @@ class ServicoOrquestracaoBanco:
                     "nivelLog": nivelLog[:24],
                     "mensagemLog": mensagemLog[:2000],
                     "payloadLog": self._serializarJson(payloadLog) if payloadLog is not None else None,
+                    "criadoEm": self._obterAgoraBrasilia(),
                 },
             )
 
@@ -1969,23 +1985,21 @@ class ServicoOrquestracaoBanco:
         return valor
 
     def _normalizarDataIso(self, valorData: str) -> datetime:
-        """Converte um texto ISO em datetime UTC."""
-        valor_normalizado = str(valorData or "").strip().replace("Z", "+00:00")
+        """Converte um texto ISO em datetime no fuso horario de Brasilia (UTC-3)."""
+        valor_normalizado = str(valorData or "").strip().replace("Z", "-03:00")
         if not valor_normalizado:
             raise ValueError("Data invalida.")
         data_convertida = datetime.fromisoformat(valor_normalizado)
         if data_convertida.tzinfo is None:
-            data_convertida = data_convertida.replace(tzinfo=timezone.utc)
-        return data_convertida.astimezone(timezone.utc)
+            data_convertida = data_convertida.replace(tzinfo=FUSO_BRASILIA)
+        return data_convertida.astimezone(FUSO_BRASILIA).replace(tzinfo=None)
 
     def _formatarData(self, valorData: Any) -> str:
-        """Converte datetime em ISO para serializacao de resposta."""
+        """Converte datetime em texto formatado no padrao de Brasilia (YYYY-MM-DD HH:MM:SS)."""
         if not valorData:
             return ""
         if isinstance(valorData, datetime):
-            if valorData.tzinfo is None:
-                valorData = valorData.replace(tzinfo=timezone.utc)
-            return valorData.isoformat()
+            return valorData.strftime("%Y-%m-%d %H:%M:%S")
         return str(valorData)
 
     def processarWorkflowsAgendados(self) -> list[dict[str, Any]]:
@@ -1996,7 +2010,7 @@ class ServicoOrquestracaoBanco:
         except Exception:
             return []
 
-        agora = datetime.now()
+        agora = self._obterAgoraBrasilia()
         consulta = text(
             f"""
             SELECT Id_Workflow
