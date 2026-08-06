@@ -246,6 +246,15 @@ def CriarApp() -> Flask:
             session.permanent = True
             session.modified = True
 
+    @app.teardown_appcontext
+    def EncerrarSessoesBancoAoFinalizarRequisicao(exception: Exception | None = None) -> None:
+        """Garante a liberacao absoluta das sessoes SQLAlchemy e sockets ODBC ao fim de cada requisicao HTTP."""
+        try:
+            from App.Db.Connections import RemoverSessaoSqlServer
+            RemoverSessaoSqlServer()
+        except Exception:
+            pass
+
     @app.context_processor
     def InjetarPermissoesLayout():
         """Injeta dados globais de layout para navegação lateral e permissões.
