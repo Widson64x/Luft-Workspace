@@ -3,33 +3,35 @@ ContratosCombinados AS (
     SELECT 
         1 AS Codigo_EmpresaMatriz, '1' AS Prefixo_Integracao,
         C3_FILIAL, C3_NUM, C3_FORNECE, C3_LOJA, C3_ITEM, C3_PRODUTO,
-        C3_QUANT, C3_PRECO, C3_TOTAL, C3_DATPRI AS Data_Inicio_Vigencia,
-        C3_DATPRF AS Data_Fim_Vigencia, C3_EMISSAO, C3_CC, C3_USER, C3_OBS, C3_MSBLQL, C3_COND,
-        C3_QUJE, D_E_L_E_T_
+        C3_QUANT, C3_PRECO, C3_TOTAL, C3_DATPRI, C3_DATPRF, C3_EMISSAO, 
+        C3_CC, C3_USER, C3_OBS, C3_MSBLQL, C3_COND, C3_QUJE,
+        C3_UM, C3_LOCAL, C3_XCONJUR, C3_XCODGES, C3_XNOMGES, C3_XCODSOL, C3_XNOMSOL, C3_DIAVENF,
+        D_E_L_E_T_
     FROM U_C1JTKS_PR.SC3120
     WHERE D_E_L_E_T_ <> '*' 
-      -- AND C3_EMISSAO >= TO_CHAR(SYSDATE - 365, 'YYYYMMDD') 
-      -- AND C3_EMISSAO <= TO_CHAR(SYSDATE, 'YYYYMMDD')
+      AND C3_EMISSAO >= TO_CHAR(SYSDATE - 365, 'YYYYMMDD') 
+      AND C3_EMISSAO <= TO_CHAR(SYSDATE, 'YYYYMMDD')
     UNION ALL
     SELECT 
         2 AS Codigo_EmpresaMatriz, '2' AS Prefixo_Integracao,
         C3_FILIAL, C3_NUM, C3_FORNECE, C3_LOJA, C3_ITEM, C3_PRODUTO,
-        C3_QUANT, C3_PRECO, C3_TOTAL, C3_DATPRI AS Data_Inicio_Vigencia,
-        C3_DATPRF AS Data_Fim_Vigencia, C3_EMISSAO, C3_CC, C3_USER, C3_OBS, C3_MSBLQL, C3_COND,
-        C3_QUJE, D_E_L_E_T_
+        C3_QUANT, C3_PRECO, C3_TOTAL, C3_DATPRI, C3_DATPRF, C3_EMISSAO, 
+        C3_CC, C3_USER, C3_OBS, C3_MSBLQL, C3_COND, C3_QUJE,
+        C3_UM, C3_LOCAL, C3_XCONJUR, C3_XCODGES, C3_XNOMGES, C3_XCODSOL, C3_XNOMSOL, C3_DIAVENF,
+        D_E_L_E_T_
     FROM U_C1JTKS_PR.SC3170
     WHERE D_E_L_E_T_ <> '*'
-      -- AND C3_EMISSAO >= TO_CHAR(SYSDATE - 365, 'YYYYMMDD') 
-      -- AND C3_EMISSAO <= TO_CHAR(SYSDATE, 'YYYYMMDD')
+      AND C3_EMISSAO >= TO_CHAR(SYSDATE - 365, 'YYYYMMDD') 
+      AND C3_EMISSAO <= TO_CHAR(SYSDATE, 'YYYYMMDD')
 ),
 ContratosRanqueados AS (
-    SELECT cc.*, ROW_NUMBER() OVER (PARTITION BY Codigo_EmpresaMatriz, C3_NUM, C3_ITEM ORDER BY C3_EMISSAO DESC) AS LinhaSequencial
+    SELECT cc.*, ROW_NUMBER() OVER (PARTITION BY Codigo_EmpresaMatriz, C3_FILIAL, C3_NUM, C3_ITEM ORDER BY C3_EMISSAO DESC) AS LinhaSequencial
     FROM ContratosCombinados cc
 ),
 Aprovacoes AS (
-    SELECT 1 AS Codigo_EmpresaMatriz, CR_FILIAL, CR_NUM, CR_TIPO, CR_USERLIB, CR_DATALIB, CR_STATUS, R_E_C_N_O_ FROM U_C1JTKS_PR.SCR120 WHERE CR_TIPO = 'AE' AND D_E_L_E_T_ <> '*'
+    SELECT 1 AS Codigo_EmpresaMatriz, CR_FILIAL, CR_NUM, CR_TIPO, CR_USERLIB, CR_DATALIB, CR_STATUS, R_E_C_N_O_ FROM U_C1JTKS_PR.SCR120 WHERE CR_TIPO IN ('AE', 'CP') AND D_E_L_E_T_ <> '*'
     UNION ALL
-    SELECT 2 AS Codigo_EmpresaMatriz, CR_FILIAL, CR_NUM, CR_TIPO, CR_USERLIB, CR_DATALIB, CR_STATUS, R_E_C_N_O_ FROM U_C1JTKS_PR.SCR170 WHERE CR_TIPO = 'AE' AND D_E_L_E_T_ <> '*'
+    SELECT 2 AS Codigo_EmpresaMatriz, CR_FILIAL, CR_NUM, CR_TIPO, CR_USERLIB, CR_DATALIB, CR_STATUS, R_E_C_N_O_ FROM U_C1JTKS_PR.SCR170 WHERE CR_TIPO IN ('AE', 'CP') AND D_E_L_E_T_ <> '*'
 ),
 ContratosComAprovacao AS (
     SELECT cr.*, a.CR_TIPO, a.CR_USERLIB, a.CR_DATALIB, a.CR_STATUS,
@@ -43,7 +45,7 @@ UsuariosNomes AS (
     SELECT TRIM(USR_ID) AS Codigo_Usuario, TRIM(USR_CODIGO) AS Login_Usuario, TRIM(USR_NOME) AS Nome_Usuario FROM U_C1JTKS_PR.SYS_USR WHERE D_E_L_E_T_ <> '*'
 )
 -- ============================================================================
--- SELECT PRINCIPAL (ORDENADO CONFORME NOVA TABELA)
+-- SELECT PRINCIPAL (COM TODOS OS CAMPOS ESSENCIAIS DO PROTHEUS)
 -- ============================================================================
 SELECT 
     TRIM(ca.C3_FILIAL) AS Codigo_Empresa,
@@ -55,15 +57,20 @@ SELECT
     CASE WHEN TRIM(sb.B1_CONTA) IS NULL OR TRIM(sb.B1_CONTA) = '' THEN '1' ELSE TRIM(sb.B1_CONTA) END AS Codigo_ContaContabil, 
     CASE WHEN TRIM(ca.C3_CC) IS NULL OR TRIM(ca.C3_CC) = '' THEN NULL ELSE TRIM(ca.C3_CC) END AS Codigo_CentroCusto,
     
-    ca.CR_TIPO AS Opcao_TipoDocumento,
+    COALESCE(ca.CR_TIPO, 'CP') AS Opcao_TipoDocumento,
     ca.C3_NUM AS Numero_Contrato,
     ca.C3_ITEM AS Sequencia_Item,
     TRIM(ca.C3_PRODUTO) AS Codigo_Item,
     TRIM(sb.B1_DESC) AS Descricao_Item,
+    TRIM(ca.C3_UM) AS Unidade_Medida,
+    TRIM(ca.C3_LOCAL) AS Codigo_Almoxarifado,
     
     CASE WHEN TRIM(ca.C3_EMISSAO) IS NULL OR LENGTH(TRIM(ca.C3_EMISSAO)) < 8 THEN NULL ELSE SUBSTR(ca.C3_EMISSAO, 1, 4) || '-' || SUBSTR(ca.C3_EMISSAO, 5, 2) || '-' || SUBSTR(ca.C3_EMISSAO, 7, 2) || ' 00:00:00.000' END AS Data_Emissao_Contrato,
+    CASE WHEN TRIM(ca.C3_DATPRI) IS NULL OR LENGTH(TRIM(ca.C3_DATPRI)) < 8 THEN NULL ELSE SUBSTR(ca.C3_DATPRI, 1, 4) || '-' || SUBSTR(ca.C3_DATPRI, 5, 2) || '-' || SUBSTR(ca.C3_DATPRI, 7, 2) || ' 00:00:00.000' END AS Data_Inicio_Vigencia,
+    CASE WHEN TRIM(ca.C3_DATPRF) IS NULL OR LENGTH(TRIM(ca.C3_DATPRF)) < 8 THEN NULL ELSE SUBSTR(ca.C3_DATPRF, 1, 4) || '-' || SUBSTR(ca.C3_DATPRF, 5, 2) || '-' || SUBSTR(ca.C3_DATPRF, 7, 2) || ' 00:00:00.000' END AS Data_Fim_Vigencia,
     CASE WHEN TRIM(ca.CR_DATALIB) IS NULL OR LENGTH(TRIM(ca.CR_DATALIB)) < 8 THEN NULL ELSE SUBSTR(ca.CR_DATALIB, 1, 4) || '-' || SUBSTR(ca.CR_DATALIB, 5, 2) || '-' || SUBSTR(ca.CR_DATALIB, 7, 2) || ' 00:00:00.000' END AS Data_Aprovacao,
     
+    ca.C3_PRECO AS Preco_Unitario,
     ca.C3_TOTAL AS Valor_Total_Contrato,
     ca.C3_QUANT AS Qtd_Total_Contratada,
     ca.C3_QUJE AS Qtd_Ja_Executada,
@@ -93,6 +100,13 @@ SELECT
     uc.Login_Usuario AS Login_UsuarioCriador,
     uc.Nome_Usuario AS Nome_UsuarioCriador,
     
+    TRIM(ca.C3_XCONJUR) AS Numero_Contrato_Juridico,
+    TRIM(ca.C3_XCODGES) AS Codigo_Gestor,
+    TRIM(ca.C3_XNOMGES) AS Nome_Gestor,
+    TRIM(ca.C3_XCODSOL) AS Codigo_Solicitante,
+    TRIM(ca.C3_XNOMSOL) AS Nome_Solicitante,
+    TRIM(ca.C3_DIAVENF) AS Dia_Vencimento_NF,
+
     ca.C3_COND AS Codigo_CondicaoPagamento,
     s.E4_DESCRI AS DescricaoCondicaoPagamento,
     ca.C3_OBS AS Observacao

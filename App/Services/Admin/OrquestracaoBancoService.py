@@ -614,7 +614,12 @@ class ServicoOrquestracaoBanco:
                 with engine_destino.connect() as conexao:
                     trans = conexao.begin()
                     try:
-                        conexao.execute(text(query_destino_sql), params_nulos)
+                        dialect_name = str(engine_destino.dialect.name).lower()
+                        if "mssql" in dialect_name or "sqlserver" in dialect_name or "pyodbc" in dialect_name:
+                            query_validacao = f"SET NOEXEC ON;\n{query_destino_sql}\nSET NOEXEC OFF;"
+                            conexao.execute(text(query_validacao), params_nulos)
+                        else:
+                            conexao.execute(text(query_destino_sql), params_nulos)
                     finally:
                         trans.rollback()
             except Exception as err_destino:
@@ -1428,7 +1433,7 @@ class ServicoOrquestracaoBanco:
                         total_upd = 0
                         contou_acoes = False
 
-                        for linha in linhasTransformadas:
+                        for idx, linha in enumerate(linhasTransformadas):
                             parametros = {k.lower(): v for k, v in linha.items()}
                             for var in variaveis_query:
                                 if var not in parametros:
@@ -1444,8 +1449,14 @@ class ServicoOrquestracaoBanco:
                                             total_upd += 1
                                     if acoes:
                                         contou_acoes = True
-                            except Exception:
-                                conexao_destino.execute(text(query_destino_sql), parametros)
+                            except Exception as ex_sub:
+                                print(f"[DEBUG WORKFLOW VALIDACAO] Falha na linha {idx} com query_exec ({ex_sub}). Tentando query_destino_sql...")
+                                try:
+                                    conexao_destino.execute(text(query_destino_sql), parametros)
+                                except Exception as ex_direto:
+                                    print(f"[DEBUG WORKFLOW VALIDACAO FAIL] Linha {idx} com erro 23000/DB!\nParametros: {parametros}\nErro: {ex_direto}")
+                                    logger.error(f"[VALIDACAO QUERY DESTINO FAILS] Parametros da linha {idx}: {parametros}")
+                                    raise ex_direto
 
                         if contou_acoes:
                             retorno["totalInsercoes"] = total_ins
@@ -1457,6 +1468,7 @@ class ServicoOrquestracaoBanco:
                         msg_erro = str(erro_query)
                         if getattr(erro_query, 'orig', None):
                             msg_erro = str(erro_query.orig)
+                        print(f"[DEBUG ERRO QUERY DESTINO DETALHADO]: {msg_erro}")
                         raise ValueError(f"Erro de sintaxe ou limitacao na Query de Destino:\n{msg_erro}")
                     finally:
                         transacao.rollback()
@@ -1501,7 +1513,12 @@ class ServicoOrquestracaoBanco:
                     mapaCampos=workflow["mapaCampos"],
                 )
 
-            conexao_destino.execute(text(query_destino_sql), linhas_processadas)
+            try:
+                conexao_destino.execute(text(query_destino_sql), linhas_processadas)
+            except Exception as erro_escrever:
+                print(f"[DEBUG EXECUCAO QUERY DESTINO FAIL]\nQuery:\n{query_destino_sql}\nPrimeiras 2 linhas params:\n{linhas_processadas[:2]}\nErro: {erro_escrever}")
+                logger.error(f"[EXECUCAO QUERY DESTINO FAIL] {erro_escrever}")
+                raise
             return len(linhasTransformadas)
 
         tabela_destino = self._obterOuCriarTabelaDestino(
