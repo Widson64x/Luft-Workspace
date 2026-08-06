@@ -282,4 +282,31 @@ def CriarApp() -> Flask:
             "SsoAplicacoesVinculadas": app.config.get("LUFT_SSO_APPS_VINCULADAS", []),
         }
 
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+        IniciarAgendadorWorkflowsBackground(app)
+    elif not hasattr(app, "_agendador_iniciado"):
+        app._agendador_iniciado = True
+        IniciarAgendadorWorkflowsBackground(app)
+
     return app
+
+
+def IniciarAgendadorWorkflowsBackground(app: Flask) -> None:
+    """Inicializa um worker thread em segundo plano para rodar tarefas agendadas."""
+    import threading
+    import time
+    from App.Services.Admin.OrquestracaoBancoService import ServicoOrquestracaoBanco
+
+    def worker():
+        time.sleep(3)
+        servico = ServicoOrquestracaoBanco()
+        while True:
+            try:
+                with app.app_context():
+                    servico.processarWorkflowsAgendados()
+            except Exception as erro:
+                app.logger.error("Erro no worker do Agendador de Tarefas: %s", str(erro))
+            time.sleep(15)
+
+    thread = threading.Thread(target=worker, daemon=True, name="AgendadorWorkflowsThread")
+    thread.start()

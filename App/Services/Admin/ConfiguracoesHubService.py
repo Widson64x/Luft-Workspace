@@ -33,6 +33,16 @@ MODULOS_CONFIGURACAO = [
 		"acao": "Abrir segurança",
 	},
 	{
+		"id": "orquestracao-banco",
+		"nome": "Orquestração de Bancos",
+		"descricao": "Central de orquestração, agendamento e execução de tarefas entre bancos de dados.",
+		"icone": "ph-bold ph-database",
+		"permissao": "ADMIN.CONFIGURACOES.ORQUESTRACAO_BANCO.VISUALIZAR",
+		"endpoint": "Principal.ConfiguracoesOrquestracaoBanco",
+		"status": "Disponível",
+		"acao": "Abrir central",
+	},
+	{
 		"id": "apis",
 		"nome": "Controle de APIs",
 		"descricao": "Registro, status, monitoramento e governança dos endpoints internos e externos.",
@@ -49,16 +59,6 @@ MODULOS_CONFIGURACAO = [
 		"icone": "ph-bold ph-path",
 		"permissao": "ADMIN.CONFIGURACOES.ROTAS.VISUALIZAR",
 		"endpoint": "Principal.ConfiguracoesRotas",
-		"status": "Em breve",
-		"acao": "Abrir módulo",
-	},
-	{
-		"id": "procedures",
-		"nome": "Central de Procedures",
-		"descricao": "Ferramenta para organização de procedures, rotinas de OpenQuery e análises operacionais.",
-		"icone": "ph-bold ph-database",
-		"permissao": "ADMIN.CONFIGURACOES.PROCEDURES.VISUALIZAR",
-		"endpoint": "Principal.ConfiguracoesProcedures",
 		"status": "Em breve",
 		"acao": "Abrir módulo",
 	},
@@ -161,14 +161,17 @@ class ServicoConfiguracoesHub:
 		permission_service = LuftPermissionService(self._securityManager)
 
 		modulos_permitidos: list[dict[str, Any]] = []
-		for indice, definicao in enumerate(MODULOS_CONFIGURACAO):
+		for definicao in MODULOS_CONFIGURACAO:
 			possui_permissao = bool(permission_service.verificar_permissao(usuarioAtual, definicao["permissao"]))
 			if not possui_permissao:
 				continue
 
 			modulo = dict(definicao)
 			modulo["badgeClasse"] = "hub-badge-ok" if definicao["status"] == "Disponível" else "hub-badge-alerta"
-			modulo["delayMs"] = indice * 45
 			modulos_permitidos.append(modulo)
+
+		modulos_permitidos.sort(key=lambda m: 0 if m["status"] == "Disponível" else 1)
+		for idx, modulo in enumerate(modulos_permitidos):
+			modulo["delayMs"] = idx * 45
 
 		return modulos_permitidos
