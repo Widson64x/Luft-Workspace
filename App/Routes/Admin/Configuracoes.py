@@ -16,7 +16,6 @@ from App.Services.Admin.OrquestracaoBancoService import (
     EstruturaOrquestracaoBancoNaoConfiguradaError,
     ServicoOrquestracaoBanco,
 )
-from luftcore.modules.seguranca import auditar
 
 
 def ResolverUsuarioOperacao() -> str:
@@ -150,7 +149,6 @@ def ApiTestarConexaoIntegracao():
 @PrincipalBp.route("/api/configuracoes/orquestracao-banco/conexoes/salvar", methods=["POST"])
 @login_required
 @require_permission("ADMIN.CONFIGURACOES.ORQUESTRACAO_BANCO.VISUALIZAR")
-@auditar("EDITAR", "CONEXAO")
 def ApiSalvarConexaoIntegracao():
     """Cria ou atualiza conexões usadas na orquestração de banco após validar a conectividade."""
     payload = request.get_json(silent=True) or {}
@@ -166,7 +164,6 @@ def ApiSalvarConexaoIntegracao():
         return resposta_api_erro(mensagem=str(erro_validacao), status_http=400)
     except Exception as erro_inesperado:
         current_app.logger.exception("Falha ao salvar conexão de banco")
-        
         return resposta_api_erro(
             mensagem="Falha ao salvar conexão de banco.",
             detalhes={"erro": str(erro_inesperado)},
@@ -177,7 +174,6 @@ def ApiSalvarConexaoIntegracao():
 @PrincipalBp.route("/api/configuracoes/orquestracao-banco/conexoes/excluir", methods=["POST"])
 @login_required
 @require_permission("ADMIN.CONFIGURACOES.ORQUESTRACAO_BANCO.VISUALIZAR")
-@auditar("EXCLUIR", "CONEXAO", severidade="ALTA")
 def ApiExcluirConexaoIntegracao():
     """Exclui uma conexão cadastrada se não estiver em uso."""
     payload = request.get_json(silent=True) or {}
@@ -205,7 +201,6 @@ def ApiExcluirConexaoIntegracao():
 @PrincipalBp.route("/api/configuracoes/orquestracao-banco/excluir", methods=["POST"])
 @login_required
 @require_permission("ADMIN.CONFIGURACOES.ORQUESTRACAO_BANCO.VISUALIZAR")
-@auditar("EXCLUIR", "ORQUESTRACAO", severidade="ALTA")
 def ApiExcluirProcedimentoIntegracao():
     """Exclui uma tarefa de orquestração e seu histórico."""
     payload = request.get_json(silent=True) or {}
@@ -297,7 +292,6 @@ def ApiHistoricoProcedimentoIntegracao():
 @PrincipalBp.route("/api/configuracoes/orquestracao-banco/salvar", methods=["POST"])
 @login_required
 @require_permission("ADMIN.CONFIGURACOES.ORQUESTRACAO_BANCO.VISUALIZAR")
-@auditar("EDITAR", "ORQUESTRACAO")
 def ApiSalvarProcedimentoIntegracao():
     """Cria ou atualiza cadastro de tarefa de orquestração."""
     payload = request.get_json(silent=True) or {}
@@ -379,7 +373,6 @@ def ApiTestarWorkflowIntegracao():
 @PrincipalBp.route("/api/configuracoes/orquestracao-banco/executar", methods=["POST"])
 @login_required
 @require_permission("ADMIN.CONFIGURACOES.ORQUESTRACAO_BANCO.VISUALIZAR")
-@auditar("EXECUTAR", "ORQUESTRACAO", severidade="MEDIA")
 def ApiExecutarProcedimentoIntegracao():
     """Executa manualmente uma tarefa de orquestração de banco."""
     payload = request.get_json(silent=True) or {}
@@ -399,7 +392,6 @@ def ApiExecutarProcedimentoIntegracao():
         return resposta_api_erro(mensagem=str(erro_validacao), status_http=400)
     except Exception as erro_inesperado:
         current_app.logger.exception("Falha na execução de tarefa de orquestração")
-        
         return resposta_api_erro(
             mensagem="Falha na execução da tarefa.",
             detalhes={"erro": str(erro_inesperado)},

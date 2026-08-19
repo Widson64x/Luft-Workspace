@@ -16,7 +16,6 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from luftcore.extensions.flask_extension import LuftCorePackages, LuftUser
 from luftcore.extensions.seguranca_extension import LuftSecurity
-from luftcore.extensions.auditoria_extension import LuftAuditoria
 from luftcore.modules.seguranca import (
     Tb_LogAcesso,
     Tb_Permissao,
@@ -187,21 +186,9 @@ def CriarApp() -> Flask:
         injetar_js=True,
         mostrar_topbar=True,
         mostrar_pesquisa=False,
-        mostrar_notificacoes=True,
+        mostrar_notificacoes=False,
         mostrar_breadcrumb=True,
     )
-
-    # Configurar polling de notificações para quasi tempo-real (5s)
-    app.config["LUFT_NOTIFICACOES_POLLING_MS"] = 5000
-    app.jinja_env.globals["luft_notificacoes_polling_ms"] = 5000
-
-    # Registrar serviço de notificações no app.extensions
-    from luftcore.modules.notificacoes.services import ServicoNotificacoes
-    servico_notificacoes = ServicoNotificacoes(
-        session_factory=GetSqlServerSession,
-        sistema_id=int(os.getenv("SISTEMA_ID", "0")),
-    )
-    app.extensions["luft_notificacoes"] = servico_notificacoes
 
     usar_prefixo_mensagens = ResolverBooleanoAmbiente(
         os.getenv("LUFT_USAR_PREFIXO_MENSAGENS"),
@@ -227,20 +214,9 @@ def CriarApp() -> Flask:
         permissao_model=Tb_Permissao,
         permissao_grupo_model=Tb_PermissaoGrupo,
         permissao_usuario_model=Tb_PermissaoUsuario,
+        log_acesso_model=Tb_LogAcesso,
         debug_permissions=(os.getenv("DEBUG_PERMISSIONS", "false").lower() == "true"),
     )
-
-    # Inicializar modulo de Auditoria (LogAcesso + LogDetalhe)
-    luft_auditoria = LuftAuditoria()
-    luft_auditoria.init_app(
-        app=app,
-        session_factory=GetSqlServerSession,
-        sistema_id=int(os.getenv("SISTEMA_ID", "0")),
-        log_acesso_model=Tb_LogAcesso,
-    )
-
-    from luftcore.extensions.logging_extension import ConfigurarLogsGlobais
-    ConfigurarLogsGlobais(app, GetSqlServerSession, sistema_id=int(os.getenv("SISTEMA_ID", "0")))
 
     from App.Routes.Main import PrincipalBp
 

@@ -30,10 +30,7 @@ from App.Models.OrquestracaoBancoModel import (
     TbBancoTarefaCampo,
 )
 
-import logging
-from flask import current_app
-from werkzeug.local import LocalProxy
-logger = LocalProxy(lambda: current_app.logger)
+logger = logging.getLogger(__name__)
 
 FUSO_BRASILIA = timezone(timedelta(hours=-3))
 
@@ -1453,11 +1450,11 @@ class ServicoOrquestracaoBanco:
                                     if acoes:
                                         contou_acoes = True
                             except Exception as ex_sub:
-                                logger.debug(f"[DEBUG WORKFLOW VALIDACAO] Falha na linha {idx} com query_exec ({ex_sub}). Tentando query_destino_sql...")
+                                print(f"[DEBUG WORKFLOW VALIDACAO] Falha na linha {idx} com query_exec ({ex_sub}). Tentando query_destino_sql...")
                                 try:
                                     conexao_destino.execute(text(query_destino_sql), parametros)
                                 except Exception as ex_direto:
-                                    logger.error(f"[DEBUG WORKFLOW VALIDACAO FAIL] Linha {idx} com erro 23000/DB!\nParametros: {parametros}\nErro: {ex_direto}")
+                                    print(f"[DEBUG WORKFLOW VALIDACAO FAIL] Linha {idx} com erro 23000/DB!\nParametros: {parametros}\nErro: {ex_direto}")
                                     logger.error(f"[VALIDACAO QUERY DESTINO FAILS] Parametros da linha {idx}: {parametros}")
                                     raise ex_direto
 
@@ -1471,7 +1468,7 @@ class ServicoOrquestracaoBanco:
                         msg_erro = str(erro_query)
                         if getattr(erro_query, 'orig', None):
                             msg_erro = str(erro_query.orig)
-                        logger.error(f"[DEBUG ERRO QUERY DESTINO DETALHADO]: {msg_erro}")
+                        print(f"[DEBUG ERRO QUERY DESTINO DETALHADO]: {msg_erro}")
                         raise ValueError(f"Erro de sintaxe ou limitacao na Query de Destino:\n{msg_erro}")
                     finally:
                         transacao.rollback()
@@ -1519,7 +1516,7 @@ class ServicoOrquestracaoBanco:
             try:
                 conexao_destino.execute(text(query_destino_sql), linhas_processadas)
             except Exception as erro_escrever:
-                logger.error(f"[DEBUG EXECUCAO QUERY DESTINO FAIL]\nQuery:\n{query_destino_sql}\nPrimeiras 2 linhas params:\n{linhas_processadas[:2]}\nErro: {erro_escrever}")
+                print(f"[DEBUG EXECUCAO QUERY DESTINO FAIL]\nQuery:\n{query_destino_sql}\nPrimeiras 2 linhas params:\n{linhas_processadas[:2]}\nErro: {erro_escrever}")
                 logger.error(f"[EXECUCAO QUERY DESTINO FAIL] {erro_escrever}")
                 raise
             return len(linhasTransformadas)

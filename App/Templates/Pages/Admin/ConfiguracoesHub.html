@@ -48,7 +48,7 @@
 	<article class="hub-card-configuracao hub-card-em-breve hub-reveal-up" style="animation-delay: {{ modulo.delayMs }}ms;">
 		<div>
 			<div class="hub-card-config-topo">
-				<div class="hub-cartao-icone {% if modulo.status == 'Em breve' %}hub-cartao-icone-desabilitado{% endif %}">
+				<div class="hub-cartao-icone hub-cartao-icone-desabilitado">
 					<i class="{{ modulo.icone }}"></i>
 				</div>
 				<span class="hub-badge {{ modulo.badgeClasse }}">{{ modulo.status }}</span>
@@ -58,11 +58,7 @@
 				<p>{{ modulo.descricao }}</p>
 			</div>
 		</div>
-        {% if modulo.status == 'Em breve' %}
 		<button class="hub-botao-acessar hub-botao-desabilitado" type="button" disabled>Em construção</button>
-        {% else %}
-		<button class="hub-botao-acessar hub-botao-desabilitado" type="button" disabled>Em construção</button>
-        {% endif %}
 	</article>
 	{% endfor %}
 </section>
