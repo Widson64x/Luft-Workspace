@@ -12,6 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from App.Routes.Principal import PrincipalBp
 from App.Services.Admin.SistemasHubService import ServicoSistemasHub
 from App.Services.Admin.OperacoesAmbienteService import ServicoOperacoesAmbiente
+from luftcore.modules.seguranca import auditar
 
 
 @PrincipalBp.route("/admin/sistemas")
@@ -70,9 +71,11 @@ def PainelSistemas():
 	)
 
 
+
 @PrincipalBp.route("/api/admin/sistemas/salvar", methods=["POST"])
 @login_required
 @require_permission("ADMIN.PAINEL.EDITAR")
+@auditar("EDITAR", "SISTEMA", severidade="MEDIA")
 def ApiSalvarSistema():
 	"""Endpoint de persistencia de cadastro de sistemas do Hub."""
 	security_manager = current_app.extensions["luft_security"]
@@ -95,6 +98,15 @@ def ApiSalvarSistema():
 		)
 	except IntegrityError as erro_integridade:
 		current_app.logger.warning("Erro de integridade ao salvar sistema: %s", str(erro_integridade))
+		
+		if notif := current_app.extensions.get("luft_notificacoes"):
+			notif.criar_notificacao(
+				titulo="Conflito de Sistema",
+				mensagem="Tentativa de salvar um sistema com nome ou chave duplicada. Ação bloqueada pelo banco.",
+				tipo="ALERTA",
+				categoria="SEGURANCA"
+			)
+			
 		return resposta_api_erro(
 			mensagem="Não foi possível salvar: já existe um sistema com esse nome ou há conflito de chave.",
 			detalhes={"erro": str(erro_integridade)},

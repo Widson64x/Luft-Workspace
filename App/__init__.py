@@ -16,6 +16,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from luftcore.extensions.flask_extension import LuftCorePackages, LuftUser
 from luftcore.extensions.seguranca_extension import LuftSecurity
+from luftcore.extensions.auditoria_extension import LuftAuditoria
 from luftcore.modules.seguranca import (
     Tb_LogAcesso,
     Tb_Permissao,
@@ -186,9 +187,21 @@ def CriarApp() -> Flask:
         injetar_js=True,
         mostrar_topbar=True,
         mostrar_pesquisa=False,
-        mostrar_notificacoes=False,
+        mostrar_notificacoes=True,
         mostrar_breadcrumb=True,
     )
+
+    # Configurar polling de notificações para quasi tempo-real (5s)
+    app.config["LUFT_NOTIFICACOES_POLLING_MS"] = 5000
+    app.jinja_env.globals["luft_notificacoes_polling_ms"] = 5000
+
+    # Registrar serviço de notificações no app.extensions
+    from luftcore.modules.notificacoes.services import ServicoNotificacoes
+    servico_notificacoes = ServicoNotificacoes(
+        session_factory=GetSqlServerSession,
+        sistema_id=int(os.getenv("SISTEMA_ID", "0")),
+    )
+    app.extensions["luft_notificacoes"] = servico_notificacoes
 
     usar_prefixo_mensagens = ResolverBooleanoAmbiente(
         os.getenv("LUFT_USAR_PREFIXO_MENSAGENS"),
@@ -214,9 +227,20 @@ def CriarApp() -> Flask:
         permissao_model=Tb_Permissao,
         permissao_grupo_model=Tb_PermissaoGrupo,
         permissao_usuario_model=Tb_PermissaoUsuario,
-        log_acesso_model=Tb_LogAcesso,
         debug_permissions=(os.getenv("DEBUG_PERMISSIONS", "false").lower() == "true"),
     )
+
+    # Inicializar modulo de Auditoria (LogAcesso + LogDetalhe)
+    luft_auditoria = LuftAuditoria()
+    luft_auditoria.init_app(
+        app=app,
+        session_factory=GetSqlServerSession,
+        sistema_id=int(os.getenv("SISTEMA_ID", "0")),
+        log_acesso_model=Tb_LogAcesso,
+    )
+
+    from luftcore.extensions.logging_extension import ConfigurarLogsGlobais
+    ConfigurarLogsGlobais(app, GetSqlServerSession, sistema_id=int(os.getenv("SISTEMA_ID", "0")))
 
     from App.Routes.Main import PrincipalBp
 
@@ -245,6 +269,15 @@ def CriarApp() -> Flask:
         if current_user.is_authenticated:
             session.permanent = True
             session.modified = True
+
+    @app.teardown_appcontext
+    def EncerrarSessoesBancoAoFinalizarRequisicao(exception: Exception | None = None) -> None:
+        """Garante a liberacao absoluta das sessoes SQLAlchemy e sockets ODBC ao fim de cada requisicao HTTP."""
+        try:
+            from App.Db.Connections import RemoverSessaoSqlServer
+            RemoverSessaoSqlServer()
+        except Exception:
+            pass
 
     @app.context_processor
     def InjetarPermissoesLayout():
@@ -282,4 +315,31 @@ def CriarApp() -> Flask:
             "SsoAplicacoesVinculadas": app.config.get("LUFT_SSO_APPS_VINCULADAS", []),
         }
 
+    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
+        IniciarAgendadorWorkflowsBackground(app)
+    elif not hasattr(app, "_agendador_iniciado"):
+        app._agendador_iniciado = True
+        IniciarAgendadorWorkflowsBackground(app)
+
     return app
+
+
+def IniciarAgendadorWorkflowsBackground(app: Flask) -> None:
+    """Inicializa um worker thread em segundo plano para rodar tarefas agendadas."""
+    import threading
+    import time
+    from App.Services.Admin.OrquestracaoBancoService import ServicoOrquestracaoBanco
+
+    def worker():
+        time.sleep(3)
+        servico = ServicoOrquestracaoBanco()
+        while True:
+            try:
+                with app.app_context():
+                    servico.processarWorkflowsAgendados()
+            except Exception as erro:
+                app.logger.error("Erro no worker do Agendador de Tarefas: %s", str(erro))
+            time.sleep(15)
+
+    thread = threading.Thread(target=worker, daemon=True, name="AgendadorWorkflowsThread")
+    thread.start()

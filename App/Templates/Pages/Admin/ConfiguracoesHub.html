@@ -9,25 +9,64 @@
 </div>
 
 {% if modulosPermitidos %}
-<section class="hub-grid-configuracoes">
-	{% for modulo in modulosPermitidos %}
+{% set modulosAtivos = modulosPermitidos | selectattr('status', 'equalto', 'Disponível') | list %}
+{% set modulosEmBreve = modulosPermitidos | rejectattr('status', 'equalto', 'Disponível') | list %}
+
+{% if modulosAtivos %}
+<div class="hub-secao-divisao hub-reveal-up" style="margin-top: 1.25rem;">
+	<h3 class="hub-secao-titulo"><i class="ph-bold ph-check-circle" style="color: var(--hub-cor-sucesso);"></i> Módulos Disponíveis</h3>
+	<p class="hub-secao-subtitulo">Ferramentas funcionais prontas para uso administrativo.</p>
+</div>
+<section class="hub-grid-configuracoes" style="margin-top: 0.75rem;">
+	{% for modulo in modulosAtivos %}
 	<article class="hub-card-configuracao hub-reveal-up" style="animation-delay: {{ modulo.delayMs }}ms;">
-		<div class="hub-card-config-topo">
-			<div class="hub-cartao-icone">
-				<i class="{{ modulo.icone }}"></i>
+		<div>
+			<div class="hub-card-config-topo">
+				<div class="hub-cartao-icone">
+					<i class="{{ modulo.icone }}"></i>
+				</div>
+				<span class="hub-badge {{ modulo.badgeClasse }}">{{ modulo.status }}</span>
 			</div>
-			<span class="hub-badge {{ modulo.badgeClasse }}">{{ modulo.status }}</span>
+			<div class="hub-card-config-corpo">
+				<h3>{{ modulo.nome }}</h3>
+				<p>{{ modulo.descricao }}</p>
+			</div>
 		</div>
-		<h3>{{ modulo.nome }}</h3>
-		<p>{{ modulo.descricao }}</p>
-		{% if modulo.status == 'Em breve' %}
-		<button class="hub-botao-acessar hub-botao-desabilitado" type="button" disabled>Em construção</button>
-		{% else %}
 		<a class="hub-botao-acessar" href="{{ modulo.href }}">{{ modulo.acao }}</a>
-		{% endif %}
 	</article>
 	{% endfor %}
 </section>
+{% endif %}
+
+{% if modulosEmBreve %}
+<div class="hub-secao-divisao hub-reveal-up" style="margin-top: 2rem;">
+	<h3 class="hub-secao-titulo"><i class="ph-bold ph-hourglass-high" style="color: #c97918;"></i> Em Desenvolvimento (Roadmap)</h3>
+	<p class="hub-secao-subtitulo">Novas funcionalidades em fase de construção para o ecossistema.</p>
+</div>
+<section class="hub-grid-configuracoes" style="margin-top: 0.75rem;">
+	{% for modulo in modulosEmBreve %}
+	<article class="hub-card-configuracao hub-card-em-breve hub-reveal-up" style="animation-delay: {{ modulo.delayMs }}ms;">
+		<div>
+			<div class="hub-card-config-topo">
+				<div class="hub-cartao-icone {% if modulo.status == 'Em breve' %}hub-cartao-icone-desabilitado{% endif %}">
+					<i class="{{ modulo.icone }}"></i>
+				</div>
+				<span class="hub-badge {{ modulo.badgeClasse }}">{{ modulo.status }}</span>
+			</div>
+			<div class="hub-card-config-corpo">
+				<h3>{{ modulo.nome }}</h3>
+				<p>{{ modulo.descricao }}</p>
+			</div>
+		</div>
+        {% if modulo.status == 'Em breve' %}
+		<button class="hub-botao-acessar hub-botao-desabilitado" type="button" disabled>Em construção</button>
+        {% else %}
+		<button class="hub-botao-acessar hub-botao-desabilitado" type="button" disabled>Em construção</button>
+        {% endif %}
+	</article>
+	{% endfor %}
+</section>
+{% endif %}
 {% else %}
 <section class="hub-vazio hub-reveal-up">
 	<h3>Sem módulos disponíveis</h3>
