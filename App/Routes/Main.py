@@ -12,3 +12,4 @@ from App.Routes.Principal import PrincipalBp
 from App.Routes.Admin import AdminSistemas  # noqa: F401
 from App.Routes.Admin import Configuracoes  # noqa: F401
 from App.Routes.Admin import OperacoesAmbiente  # noqa: F401
+from App.Routes.Testes import TestesNotificacoes  # noqa: F401

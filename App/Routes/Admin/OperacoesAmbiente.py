@@ -9,6 +9,7 @@ from luftcore.extensions.seguranca_extension import require_permission
 
 from App.Routes.Principal import PrincipalBp
 from App.Services.Admin.OperacoesAmbienteService import ServicoOperacoesAmbiente
+from luftcore.modules.seguranca import auditar
 
 
 @PrincipalBp.route("/configuracoes/operacoes-ambiente")
@@ -62,6 +63,7 @@ def ApiListarVariaveisProjetoOperacoesAmbiente():
 @PrincipalBp.route("/api/configuracoes/operacoes-ambiente/variaveis/salvar", methods=["POST"])
 @login_required
 @require_permission("ADMIN.SEGURANCA.VISUALIZAR")
+@auditar("CONFIGURAR", "SEGURANCA", severidade="ALTA")
 def ApiSalvarVariavelProjetoOperacoesAmbiente():
 	"""Atualiza uma variável permitida de um projeto monitorado."""
 	payload = request.get_json(silent=True) or {}
@@ -86,6 +88,15 @@ def ApiSalvarVariavelProjetoOperacoesAmbiente():
 		return resposta_api_erro(mensagem=str(erro_validacao), status_http=400)
 	except Exception as erro_inesperado:
 		current_app.logger.exception("Falha ao atualizar variável de ambiente")
+		
+		if notif := current_app.extensions.get("luft_notificacoes"):
+			notif.criar_notificacao(
+				titulo="Falha de Configuração",
+				mensagem=f"Ocorreu um erro ao atualizar a variável '{chave}' no projeto {id_projeto}. Erro: {str(erro_inesperado)}",
+				tipo="ERRO",
+				categoria="SEGURANCA"
+			)
+			
 		return resposta_api_erro(
 			mensagem="Falha ao atualizar variável de ambiente.",
 			detalhes={"erro": str(erro_inesperado)},
@@ -105,6 +116,7 @@ def ApiListarServicosOperacoesAmbiente():
 @PrincipalBp.route("/api/configuracoes/operacoes-ambiente/servicos/acao", methods=["POST"])
 @login_required
 @require_permission("ADMIN.SEGURANCA.VISUALIZAR")
+@auditar("EXECUTAR", "SERVICO", severidade="ALTA")
 def ApiExecutarAcaoServicoOperacoesAmbiente():
 	"""Executa ação operacional de serviço (iniciar/parar/reiniciar)."""
 	payload = request.get_json(silent=True) or {}
@@ -122,6 +134,15 @@ def ApiExecutarAcaoServicoOperacoesAmbiente():
 		return resposta_api_erro(mensagem=str(erro_validacao), status_http=400)
 	except Exception as erro_inesperado:
 		current_app.logger.exception("Falha ao executar acao de servico")
+		
+		if notif := current_app.extensions.get("luft_notificacoes"):
+			notif.criar_notificacao(
+				titulo="Falha de Operação no Serviço",
+				mensagem=f"Erro ao tentar executar '{acao}' no serviço '{id_servico}'.",
+				tipo="ERRO",
+				categoria="SERVICO"
+			)
+			
 		return resposta_api_erro(
 			mensagem="Falha ao executar ação de serviço.",
 			detalhes={"erro": str(erro_inesperado)},
