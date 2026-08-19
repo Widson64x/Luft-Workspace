@@ -6,4 +6,4 @@ ldap3==2.9.1
 pyodbc==5.2.0
 oracledb==2.4.1
 psycopg[binary]>=3.2.10
-LuftCore @ git+https://github.com/Widson64x/LuftCore.git@v0.2.6 
+LuftCore @ git+https://github.com/Widson64x/LuftCore.git@v0.2.3
