@@ -94,7 +94,7 @@ class ServicoOperacoesAmbiente:
         {
             "idProjeto": "Luft-Workspace",
             "nomeProjeto": "Luft-Workspace",
-            "nomesDiretorio": ("LuftIntegrador", "Luft-Workspace"),
+            "nomesDiretorio": ("Luft-Workspace",),
             "variavelCaminhoProjeto": "WORKSPACE_PROJECT_DIR",
             "variaveisPermitidas": _VARIAVEIS_PADRAO + (
                 VariavelPermitida("LUFT_USAR_PREFIXO_MENSAGENS", "Ativa prefixo no endpoint de mensagens."),
@@ -143,7 +143,7 @@ class ServicoOperacoesAmbiente:
         {
             "idProjeto": "luft-integrador",
             "nomeProjeto": "Luft-Integrador",
-            "nomesDiretorio": ("LuftIntegrador", "Luft-Integrador"),
+            "nomesDiretorio": ("Luft-Integrador",),
             "variavelCaminhoProjeto": "LUFT_INTEGRADOR_PROJECT_DIR",
             "variaveisPermitidas": _VARIAVEIS_PADRAO,
             "subpastasExtrasVenv": (),

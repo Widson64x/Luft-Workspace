@@ -12,7 +12,6 @@ from functools import lru_cache
 
 from dotenv import load_dotenv
 from luftcore.extensions.sqlalchemy_extension import SqlAlchemyExtension
-from sqlalchemy.orm import scoped_session
 
 load_dotenv()
 
@@ -101,27 +100,13 @@ def ObterUriSqlServer(ocultarSenha: bool = True) -> str:
     return ObterExtensaoSqlAlchemy().obter_uri_conexao(ocultar_senha=ocultarSenha)
 
 
-_SESSAO_SCOPED: scoped_session | None = None
-
-
 def GetSqlServerSession():
-    """Retorna uma sessao scoped do SQLAlchemy para SQL Server vinculada ao contexto da thread.
+    """Retorna uma sessao simples SQLAlchemy para SQL Server.
 
     Retorno:
-    Session: Sessao SQLAlchemy ativa no contexto atual.
+    Session: Sessao SQLAlchemy vinculada ao SQL Server.
     """
-    global _SESSAO_SCOPED
-    if _SESSAO_SCOPED is None:
-        extensao = ObterExtensaoSqlAlchemy()
-        _SESSAO_SCOPED = scoped_session(extensao.conector._session_factory)
-    return _SESSAO_SCOPED()
-
-
-def RemoverSessaoSqlServer() -> None:
-    """Encerra e remove a sessao do contexto atual, liberando conexoes com o SQL Server."""
-    global _SESSAO_SCOPED
-    if _SESSAO_SCOPED is not None:
-        _SESSAO_SCOPED.remove()
+    return ObterExtensaoSqlAlchemy().obter_sessao_simples()
 
 
 def GetSqlServerEngine():

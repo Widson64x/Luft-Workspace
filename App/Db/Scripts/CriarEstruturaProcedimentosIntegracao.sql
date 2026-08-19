@@ -1,1 +1,0 @@
--- Script legado substituido por CriarEstruturaOrquestracaoBanco.sql
