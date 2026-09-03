@@ -39,33 +39,8 @@ def ResolverUsuarioOperacao() -> str:
 
 @PrincipalBp.route("/configuracoes")
 @login_required
-@require_permission("HOME.VISUALIZAR")
 def ConfiguracoesHub():
-    """Renderiza o painel central de configuracoes do Hub.
-
-    Retorno:
-    Response: HTML do painel de configuracoes.
-    """
-    security_manager = current_app.extensions["luft_security"]
-
-    try:
-        GarantirPermissoesConfiguracoesExemplo(security_manager)
-    except Exception as erro_permissoes:
-        current_app.logger.warning(
-            "Falha ao garantir permissões de configuração de exemplo: %s",
-            str(erro_permissoes),
-        )
-
-    servico = ServicoConfiguracoesHub(security_manager)
-    modulos_permitidos = servico.listarModulosPermitidos(current_user)
-
-    for modulo in modulos_permitidos:
-        modulo["href"] = url_for(modulo["endpoint"])
-
-    return render_template(
-        "Pages/Admin/ConfiguracoesHub.html",
-        modulosPermitidos=modulos_permitidos,
-    )
+    return redirect(url_for('Configuracoes.visualizar_painel'))
 
 
 @PrincipalBp.route("/configuracoes/apis")

@@ -9,7 +9,7 @@ from __future__ import annotations
 from App.Routes.Principal import PrincipalBp
 
 # Importacoes por efeito colateral: cada modulo anexa rotas ao mesmo blueprint.
-from App.Routes.Admin import AdminSistemas  # noqa: F401
-from App.Routes.Admin import Configuracoes  # noqa: F401
-from App.Routes.Admin import OperacoesAmbiente  # noqa: F401
-from App.Routes.Testes import TestesNotificacoes  # noqa: F401
+from App.Routes.Admin import AdminSistemas
+from App.Routes.Admin import Configuracoes
+from App.Routes.Admin import OperacoesAmbiente
+from App.Routes.Testes import TestesNotificacoes

@@ -1,0 +1,22 @@
+{% extends "luftcore/seguranca/painel_admin.html" %}
+
+{# ========================================================================= #}
+{# Painel de Configurações - Luft-Workspace                                  #}
+{# Espelha o padrão do LuftCore e adiciona a Orquestração de Bancos          #}
+{# ========================================================================= #}
+
+{% block extra_cards_configuracoes %}
+<a href="{{ url_for('Principal.ConfiguracoesOrquestracaoBanco') }}" class="module-card">
+    <div class="module-card-icon" style="background: var(--luft-info-50, #eff6ff); color: var(--luft-info-600, #2563eb); border-color: var(--luft-info-100, #dbeafe);">
+        <i class="ph-bold ph-database"></i>
+    </div>
+    <h4 class="module-card-title">Orquestração de Bancos</h4>
+    <p class="module-card-desc">
+        Painel de agendamento, pooling de conexões e execução de rotinas automáticas de sincronismo entre bancos de dados heterogêneos.
+    </p>
+    <div class="module-card-action">
+        Acessar Central de Bancos <i class="ph-bold ph-arrow-right"></i>
+    </div>
+</a>
+{% endblock %}
+
