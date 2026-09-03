@@ -33,7 +33,7 @@
 {% endcall %}
 
 {% call ui.nav_item('Configurações', icone='ph-bold ph-sliders-horizontal', ativo=configuracoes_ativo) %}
-{{ ui.nav_item('Painel Central', icone='ph-bold ph-squares-four', href=url_for('Principal.ConfiguracoesHub'), ativo=(endpoint_atual == 'Principal.ConfiguracoesHub')) }}
+{{ ui.nav_item('Painel Central', icone='ph-bold ph-sliders-horizontal', href=url_for('Configuracoes.visualizar_painel'), ativo=(endpoint_atual == 'Configuracoes.visualizar_painel')) }}
 {% for modulo in ModulosConfiguracaoMenu %}
     {% if modulo.status == 'Em breve' %}
 {{ ui.nav_item(modulo.nome ~ ' (em breve)', icone=modulo.icone, href='#', ativo=False) }}
@@ -48,8 +48,8 @@
 <button onclick="LuftCore.alternarTema()" class="luft-btn-action hover-lift" title="Alternar tema">
     <i class="ph-bold ph-moon"></i>
 </button>
-<a href="{{ url_for('Principal.ConfiguracoesHub') }}" class="luft-btn-action hover-lift" title="Configurações">
-    <i class="ph-bold ph-sliders-horizontal"></i>
+<a href="{{ url_for('Configuracoes.visualizar_painel') }}" class="luft-btn-action hover-lift" title="Painel de Controle">
+    <i class="ph-bold ph-gear"></i>
 </a>
 <a href="{{ url_for('Autenticacao.logout') }}" class="luft-btn-action hover-lift text-danger" title="Sair">
     <i class="ph-bold ph-power"></i>
