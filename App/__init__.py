@@ -16,14 +16,14 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 
 from luftcore.extensions.flask_extension import LuftCorePackages, LuftUser
 from luftcore.extensions.seguranca_extension import LuftSecurity
-from luftcore.extensions.auditoria_extension import LuftAuditoria
-from luftcore.modules.seguranca import (
-    Tb_LogAcesso,
+from luftcore.modules.auditoria import LuftAuditoria
+from App.Models.SqlServer.Usuario import Usuario, UsuarioGrupo
+from App.Models.SqlServer.Permissoes import (
     Tb_Permissao,
     Tb_PermissaoGrupo,
     Tb_PermissaoUsuario,
-    Usuario,
-    UsuarioGrupo,
+    Tb_LogAcesso,
+    Tb_LogDetalhe,
 )
 from luftcore.modules.seguranca.services import LuftPermissionService
 
@@ -162,7 +162,7 @@ def CriarApp() -> Flask:
     )
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-    app.secret_key = os.getenv("APP_SECRET_KEY", "hub-central-dev")
+    app.secret_key = os.getenv("APP_SECRET_KEY", "gAAAAABqTWMijKXcZkhPlaQvDXxciI2tqksklJWs1ehCYn9sEoWzqL7WPtmjCekhqqrwVV7_31KmNCZbmZZS0z9pmYLvI4gJFw==")
     ConfigurarSessaoCompartilhada(app)
     ConfigurarPoliticaSsoGlobal(app)
 
@@ -227,6 +227,7 @@ def CriarApp() -> Flask:
         permissao_model=Tb_Permissao,
         permissao_grupo_model=Tb_PermissaoGrupo,
         permissao_usuario_model=Tb_PermissaoUsuario,
+        log_acesso_model=Tb_LogAcesso,
         debug_permissions=(os.getenv("DEBUG_PERMISSIONS", "false").lower() == "true"),
     )
 
@@ -237,6 +238,8 @@ def CriarApp() -> Flask:
         session_factory=GetSqlServerSession,
         sistema_id=int(os.getenv("SISTEMA_ID", "0")),
         log_acesso_model=Tb_LogAcesso,
+        log_detalhe_model=Tb_LogDetalhe,
+        log_dir=os.getenv("LOG_DIRECTORY", "Logs"),
     )
 
     from luftcore.extensions.logging_extension import ConfigurarLogsGlobais

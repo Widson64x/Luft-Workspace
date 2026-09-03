@@ -6,13 +6,23 @@ demais funcionalidades em blueprints especificos por dominio.
 
 from __future__ import annotations
 
-from flask import Blueprint, current_app, render_template
+from flask import Blueprint, current_app, redirect, render_template, url_for
 from flask_login import current_user, login_required
 from luftcore.extensions.seguranca_extension import require_permission
 
 from App.Services.Admin.SistemasHubService import ServicoSistemasHub
 
 PrincipalBp = Blueprint("Principal", __name__)
+
+
+@PrincipalBp.route("/login", methods=["GET", "POST"])
+def Login():
+    return redirect(url_for("Autenticacao.login"))
+
+
+@PrincipalBp.route("/logout")
+def Logout():
+    return redirect(url_for("Autenticacao.logout"))
 
 
 @PrincipalBp.route("/")
