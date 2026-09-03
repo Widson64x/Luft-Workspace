@@ -70,7 +70,7 @@ def ResolverCaminhoSqlServer() -> str:
         return caminho_explicito
 
     namespace = (os.getenv("VAULT_NAMESPACE") or "luft").strip().strip("/")
-    ambiente = NormalizarAmbienteVault(os.getenv("AMBIENTE_ATUAL"))
+    ambiente = NormalizarAmbienteVault(os.getenv("APP_ENV") or os.getenv("AMBIENTE_ATUAL"))
     return f"{namespace}/{ambiente}/sqlserver"
 
 
