@@ -60,17 +60,11 @@ def NormalizarAmbienteVault(valor: str | None) -> str:
 
 
 def ResolverCaminhoSqlServer() -> str:
-    """Resolve o caminho do segredo SQL Server no Vault.
-
-    Prioriza a variavel explicita VAULT_SQLSERVER_PATH e, na ausencia,
-    monta o caminho com namespace e ambiente.
-    """
-    caminho_explicito = (os.getenv("VAULT_SQLSERVER_PATH") or "").strip()
-    if caminho_explicito:
-        return caminho_explicito
-
+    """Resolve o caminho do segredo SQL Server no Vault a partir de APP_ENV."""
     namespace = (os.getenv("VAULT_NAMESPACE") or "luft").strip().strip("/")
-    ambiente = NormalizarAmbienteVault(os.getenv("APP_ENV") or os.getenv("AMBIENTE_ATUAL"))
+    ambiente = NormalizarAmbienteVault(
+        os.getenv("APP_ENV") or os.getenv("AMBIENTE_ATUAL") or os.getenv("AMBIENTE_APP")
+    )
     return f"{namespace}/{ambiente}/sqlserver"
 
 
