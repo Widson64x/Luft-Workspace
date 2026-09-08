@@ -1,7 +1,10 @@
-# Arquivo: Luft-Control/Models/SqlServer/Permissoes.py
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from App.Models.SqlServer.Usuario import Base
+
+def agora_brasilia() -> datetime:
+    tz = timezone(timedelta(hours=-3))
+    return datetime.now(tz).replace(tzinfo=None)
 
 class Tb_Sistema(Base):
     __tablename__ = "Tb_Sistema"
@@ -58,7 +61,7 @@ class Tb_LogAcesso(Base):
     Ip_Origem = Column(String(50))
     Permissao_Exigida = Column(String(100))
     Acesso_Permitido = Column(Boolean)
-    Data_Hora = Column(DateTime, default=datetime.now)
+    Data_Hora = Column(DateTime, default=agora_brasilia)
 
     # NOVAS COLUNAS:
     Parametros_Requisicao = Column(Text, nullable=True) # Vai armazenar o que o usuário enviou
@@ -84,6 +87,6 @@ class Tb_LogDetalhe(Base):
     Dados_Novos_Json = Column(Text, nullable=True)
     Ip_Origem = Column(String(50), nullable=True)
     User_Agent = Column(String(500), nullable=True)
-    Data_Hora = Column(DateTime, default=datetime.now, nullable=False)
+    Data_Hora = Column(DateTime, default=agora_brasilia, nullable=False)
     Severidade = Column(String(20), default="BAIXA", nullable=False)
     Traceback = Column(Text, nullable=True)
