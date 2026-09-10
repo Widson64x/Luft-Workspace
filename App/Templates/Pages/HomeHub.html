@@ -1,11 +1,13 @@
 {% extends "Layout/BaseLayout.html" %}
 
-{% block title %}Hub Central{% endblock %}
+{% block title %}Luft Workspace - Hub Central{% endblock %}
 
 {% block extra_head %}
 {{ super() }}
-<!-- Injetando o CSS premium específico da Home -->
-<link rel="stylesheet" href="{{ url_for('static', filename='Css/HubHome.css') }}">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='Css/HubHome.css', v='20260910.2') }}">
 {% endblock %}
 
 {% block page_content %}
@@ -13,114 +15,744 @@
 {% set total_manutencao = sistemas|selectattr('emManutencao')|list|length %}
 {% set total_operacionais = total_sistemas - total_manutencao %}
 
-<section class="hub-home-container">
-    <div class="hub-home-hero hub-reveal-up">
-        <div class="hub-home-hero-titulo">
-            <p class="hub-home-tag">Luft Workspace</p>
-            <h1>Portal central para acessar todo o ecossistema Luft</h1>
-            <p>Acesse de forma rápida os sistemas liberados para o seu perfil.</p>
+<div class="hub-home-container">
+    <!-- ==================== 1. HERO BANNER ==================== -->
+    <header class="hub-hero-banner hub-reveal-up">
+        <div class="hub-hero-info">
+            <span class="hub-hero-tag">LUFT WORKSPACE</span>
+            <h1 class="hub-hero-title">Portal central para acessar<br>todo o ecossistema Luft</h1>
+            <p class="hub-hero-desc">Conectando pessoas, sistemas e informações para uma gestão mais eficiente.</p>
+
+            <div class="hub-hero-features">
+                <div class="hub-hero-feature-item">
+                    <div class="hub-hero-feature-icon">
+                        <i class="ph-bold ph-users"></i>
+                    </div>
+                    <div class="hub-hero-feature-text">
+                        <strong>Mais agilidade</strong>
+                        <span>no seu dia a dia</span>
+                    </div>
+                </div>
+
+                <div class="hub-hero-feature-item">
+                    <div class="hub-hero-feature-icon">
+                        <i class="ph-bold ph-shield-check"></i>
+                    </div>
+                    <div class="hub-hero-feature-text">
+                        <strong>Sistemas integrados</strong>
+                        <span>e seguros</span>
+                    </div>
+                </div>
+
+                <div class="hub-hero-feature-item">
+                    <div class="hub-hero-feature-icon">
+                        <i class="ph-bold ph-chart-bar"></i>
+                    </div>
+                    <div class="hub-hero-feature-text">
+                        <strong>Informação certa</strong>
+                        <span>para melhores decisões</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="hub-hero-visual">
+            <div class="hub-hero-carousel" id="hub-hero-carousel">
+                {% if imagens_hero %}
+                    {% for img in imagens_hero %}
+                    <div
+                        class="hub-hero-slide {% if loop.first %}active{% endif %}"
+                        style="background-image: url('{{ url_for('static', filename='Img/Background/' ~ img) }}');"
+                        aria-hidden="{% if loop.first %}false{% else %}true{% endif %}"
+                    ></div>
+                    {% endfor %}
+                {% else %}
+                    <div class="hub-hero-slide active" style="background-image: url('{{ url_for('static', filename='Img/Background/banners.png') }}');"></div>
+                {% endif %}
+            </div>
+
+            <div class="hub-hero-gradient-overlay"></div>
+
+            <div class="hub-hero-script-badge">
+                <span class="hub-script-text">Juntos<br>por uma saúde<br>sem fronteiras</span>
+                <span class="hub-script-underline"></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ==================== 2. RESUMO DE KPIS ==================== -->
+    <section class="hub-kpis-row hub-reveal-up" style="animation-delay: 60ms;">
+        <button type="button" class="hub-kpi-card" data-kpi-filter="todos" title="Exibir todos os sistemas">
+            <div class="hub-kpi-icon-box kpi-blue">
+                <i class="ph-bold ph-squares-four"></i>
+            </div>
+            <div class="hub-kpi-data">
+                <span class="hub-kpi-label">Total de sistemas</span>
+                <strong class="hub-kpi-value" id="kpi-total-contador">{{ total_sistemas }}</strong>
+            </div>
+            <i class="ph-bold ph-caret-right hub-kpi-chevron"></i>
+        </button>
+
+        <button type="button" class="hub-kpi-card" data-kpi-filter="operacionais" title="Exibir sistemas operacionais">
+            <div class="hub-kpi-icon-box kpi-green">
+                <i class="ph-bold ph-check"></i>
+            </div>
+            <div class="hub-kpi-data">
+                <span class="hub-kpi-label">Operacionais</span>
+                <strong class="hub-kpi-value">{{ total_operacionais }}</strong>
+            </div>
+            <i class="ph-bold ph-caret-right hub-kpi-chevron"></i>
+        </button>
+
+        <button type="button" class="hub-kpi-card" data-kpi-filter="manutencao" title="Exibir sistemas em manutenção">
+            <div class="hub-kpi-icon-box kpi-amber">
+                <i class="ph-bold ph-wrench"></i>
+            </div>
+            <div class="hub-kpi-data">
+                <span class="hub-kpi-label">Em manutenção</span>
+                <strong class="hub-kpi-value">{{ total_manutencao }}</strong>
+            </div>
+            <i class="ph-bold ph-caret-right hub-kpi-chevron"></i>
+        </button>
+
+        <button type="button" class="hub-kpi-card" data-kpi-filter="favoritos" title="Exibir sistemas favoritos">
+            <div class="hub-kpi-icon-box kpi-star">
+                <i class="ph-bold ph-star"></i>
+            </div>
+            <div class="hub-kpi-data">
+                <span class="hub-kpi-label">Favoritos</span>
+                <strong class="hub-kpi-value" id="kpi-favoritos-contador">0</strong>
+            </div>
+            <i class="ph-bold ph-caret-right hub-kpi-chevron"></i>
+        </button>
+    </section>
+
+    <!-- ==================== 3. BARRA DE ABAS E CONTROLES ==================== -->
+    <div class="hub-nav-controls-bar hub-reveal-up" style="animation-delay: 100ms;">
+        <nav class="hub-tabs-list" aria-label="Filtros de sistemas">
+            <button type="button" class="hub-tab-btn active" data-tab="todos">Todos os sistemas</button>
+            <button type="button" class="hub-tab-btn" data-tab="favoritos">Favoritos</button>
+            <button type="button" class="hub-tab-btn" data-tab="recentes">Acessados recentemente</button>
+        </nav>
+
+        <div class="hub-controls-right">
+            <div class="hub-view-switcher" role="group" aria-label="Modo de visualização">
+                <button type="button" class="hub-view-btn active" id="btn-view-grid" title="Visualização em Grade" aria-label="Visualização em Grade">
+                    <i class="ph-bold ph-squares-four"></i>
+                </button>
+                <button type="button" class="hub-view-btn" id="btn-view-list" title="Visualização em Lista" aria-label="Visualização em Lista">
+                    <i class="ph-bold ph-list"></i>
+                </button>
+            </div>
+
+            <div class="hub-sort-wrapper">
+                <label for="hub-sort-select" class="hub-sort-label">Ordenar por</label>
+                <div class="hub-select-container">
+                    <select id="hub-sort-select" class="hub-sort-select">
+                        <option value="nome-asc">Nome (A-Z)</option>
+                        <option value="nome-desc">Nome (Z-A)</option>
+                        <option value="status-operacional">Operacionais primeiro</option>
+                        <option value="status-manutencao">Em manutenção primeiro</option>
+                    </select>
+                    <i class="ph-bold ph-caret-down hub-select-caret"></i>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="hub-home-kpis hub-reveal-up" style="animation-delay: 80ms;">
-        <article class="hub-home-kpi">
-            <div class="hub-home-kpi-icone">
-                <i class="ph-bold ph-app-window"></i>
-            </div>
-            <div class="hub-home-kpi-conteudo">
-                <span>Sistemas disponíveis</span>
-                <strong>{{ total_sistemas }}</strong>
-            </div>
-        </article>
-        <article class="hub-home-kpi">
-            <div class="hub-home-kpi-icone">
-                <i class="ph-bold ph-check-circle"></i>
-            </div>
-            <div class="hub-home-kpi-conteudo">
-                <span>Operacionais</span>
-                <strong>{{ total_operacionais }}</strong>
-            </div>
-        </article>
-        <article class="hub-home-kpi">
-            <div class="hub-home-kpi-icone">
-                <i class="ph-bold ph-wrench"></i>
-            </div>
-            <div class="hub-home-kpi-conteudo">
-                <span>Em manutenção</span>
-                <strong>{{ total_manutencao }}</strong>
-            </div>
-        </article>
-    </div>
-
-    <div class="hub-bento-grid hub-reveal-up" style="animation-delay: 120ms;">
+    <!-- ==================== 4. GRADE DE SISTEMAS ==================== -->
+    <div class="hub-systems-grid hub-reveal-up" id="hub-systems-grid" style="animation-delay: 140ms;">
         {% for sistema in sistemas %}
-        <article class="hub-bento-card" style="animation-delay: {{ loop.index0 * 90 }}ms;">
-            <div class="hub-bento-content">
-                <div class="hub-bento-header">
-                    <div class="hub-bento-icon">
-                        <i class="{{ sistema.icone or 'ph-bold ph-app-window' }}"></i>
+            {% set icone_sistema = sistema.icone or 'ph-bold ph-app-window' %}
+            {% set destino_sistema = url_for('Principal.MenuPrincipal') if 'ph-house' in icone_sistema else sistema.link %}
+            {% set abrir_nova_aba = destino_sistema and destino_sistema.startswith('http') and ('ph-house' not in icone_sistema) %}
+
+            <article
+                class="hub-system-card"
+                data-system-id="{{ sistema.idSistema }}"
+                data-system-name="{{ sistema.nomeSistema }}"
+                data-system-status="{{ 'manutencao' if sistema.emManutencao else 'operacional' }}"
+                data-system-link="{{ destino_sistema or '' }}"
+                data-system-icon="{{ icone_sistema }}"
+            >
+                <div class="hub-card-header">
+                    <div class="hub-system-icon-box">
+                        <i class="{{ icone_sistema }}"></i>
                     </div>
 
                     {% if sistema.emManutencao %}
-                    <span class="bento-badge maintenance">
-                        <span class="bento-badge-dot"></span>
-                        Em manutenção
+                    <span class="hub-badge maintenance">
+                        <span class="hub-badge-dot"></span>
+                        EM MANUTENÇÃO
                     </span>
                     {% else %}
-                    <span class="bento-badge ok">
-                        <span class="bento-badge-dot"></span>
-                        Operacional
+                    <span class="hub-badge ok">
+                        <span class="hub-badge-dot"></span>
+                        OPERACIONAL
                     </span>
                     {% endif %}
                 </div>
 
-                <h3 class="hub-bento-title">{{ sistema.nomeSistema }}</h3>
-                <p class="hub-bento-desc">{{ sistema.descricaoSistema or 'Sistema sem descrição operacional cadastrada.' }}</p>
+                <div class="hub-card-body">
+                    <h3 class="hub-system-name">{{ sistema.nomeSistema }}</h3>
+                    <p class="hub-system-desc">{{ sistema.descricaoSistema or 'Sistema integrado ao ecossistema Luft.' }}</p>
+                </div>
 
-                {% set icone_sistema = sistema.icone or '' %}
-                {% set destino_sistema = url_for('Principal.MenuPrincipal') if 'ph-house' in icone_sistema else sistema.link %}
-                {% set abrir_nova_aba = destino_sistema and destino_sistema.startswith('http') and ('ph-house' not in icone_sistema) %}
+                <div class="hub-card-footer">
+                    {% if destino_sistema and not sistema.emManutencao %}
+                    <a
+                        href="{{ destino_sistema }}"
+                        class="hub-action-btn primary hub-launch-link"
+                        {% if abrir_nova_aba %}target="_blank" rel="noopener noreferrer"{% endif %}
+                        data-action-id="{{ sistema.idSistema }}"
+                        data-action-name="{{ sistema.nomeSistema }}"
+                        data-action-icon="{{ icone_sistema }}"
+                        data-action-link="{{ destino_sistema }}"
+                    >
+                        <span>Abrir sistema</span>
+                        <i class="ph-bold ph-arrow-up-right"></i>
+                    </a>
+                    {% else %}
+                    <button type="button" class="hub-action-btn disabled" disabled>
+                        <span>Indisponível</span>
+                        <i class="ph-bold ph-lock-key"></i>
+                    </button>
+                    {% endif %}
 
-                {% if destino_sistema and not sistema.emManutencao %}
-                <a
-                    class="hub-bento-action"
-                    href="{{ destino_sistema }}"
-                    {% if abrir_nova_aba %}target="_blank" rel="noopener noreferrer"{% endif %}
-                >
-                    <span>Abrir sistema</span>
-                    <i class="ph-bold ph-arrow-up-right"></i>
-                </a>
-                {% else %}
-                <button class="hub-bento-action disabled" disabled>
-                    <span>{{ 'Indisponível durante manutenção' if sistema.emManutencao else 'Link não configurado' }}</span>
-                    <i class="ph-bold ph-lock-key"></i>
-                </button>
-                {% endif %}
-            </div>
-        </article>
+                    <button
+                        type="button"
+                        class="hub-favorite-btn"
+                        title="Favoritar sistema"
+                        aria-label="Favoritar {{ sistema.nomeSistema }}"
+                        data-fav-id="{{ sistema.idSistema }}"
+                    >
+                        <i class="ph-bold ph-star"></i>
+                    </button>
+                </div>
+            </article>
         {% endfor %}
 
-        {% if total_sistemas == 0 %}
-        <section class="bento-empty" style="animation-delay: 100ms;">
-            <h3>Nenhum sistema disponível no momento</h3>
-            <p>Seu perfil ainda não possui sistemas liberados para acesso.</p>
-        </section>
-        {% endif %}
+        <!-- Estado vazio quando não houver correspondências no filtro -->
+        <div class="hub-empty-state" id="hub-empty-state" style="display: none;">
+            <div class="hub-empty-icon"><i class="ph-bold ph-star-half"></i></div>
+            <h3>Nenhum sistema encontrado</h3>
+            <p>Nenhum sistema corresponde ao filtro ou aba selecionada.</p>
+        </div>
     </div>
-</section>
 
+    <!-- ==================== 5. SEÇÃO INFERIOR ==================== -->
+    <div class="hub-bottom-grid hub-reveal-up" style="animation-delay: 180ms;">
+        <!-- Card 1: Acessos recentes -->
+        <article class="hub-bottom-widget hub-widget-recentes">
+            <div class="hub-widget-header">
+                <div class="hub-widget-title-group">
+                    <i class="ph-bold ph-clock"></i>
+                    <h3>Acessos recentes</h3>
+                </div>
+                <button type="button" class="hub-widget-more" id="btn-ver-mais-recentes">Ver todos &rarr;</button>
+            </div>
+            <ul class="hub-recent-items-list" id="hub-recent-items-list">
+                <!-- Preenchido dinamicamente via JS a partir do localStorage -->
+            </ul>
+        </article>
+
+        <!-- Card 2: Avisos e comunicados (inclui comunicados e notas de atualização) -->
+        <article
+            class="hub-bottom-widget hub-widget-comunicados"
+            data-feed-url="{{ url_for('LuftPublicacoes.feed_comunicados', limite=4) }}"
+        >
+            <div class="hub-widget-header">
+                <div class="hub-widget-title-group">
+                    <i class="ph-bold ph-megaphone"></i>
+                    <h3>Avisos e comunicados</h3>
+                </div>
+                <div class="hub-widget-actions d-flex align-items-center gap-3">
+                    <a href="{{ url_for('LuftPublicacoes.listar_atualizacoes') }}" class="hub-widget-more d-flex align-items-center gap-1" title="Ver todas as notas de atualização (ChangeLog)">
+                        <i class="ph-bold ph-rocket-launch"></i> ChangeLog
+                    </a>
+                    <a href="{{ url_for('LuftPublicacoes.listar_comunicados') }}" class="hub-widget-more">Ver todos &rarr;</a>
+                </div>
+            </div>
+            <div class="hub-comunicados-content" id="hub-comunicados-content">
+            {% if comunicados %}
+            <div class="hub-comunicados-list">
+                {% for comunicado in comunicados %}
+                {% set eh_atualizacao = comunicado.tipo_publicacao == 'ATUALIZACAO' %}
+                <a
+                    href="{{ url_for('LuftPublicacoes.visualizar_publicacao', id_publicacao=comunicado.id) }}"
+                    class="hub-comunicado-item prioridade-{{ comunicado.prioridade|lower }} {% if not comunicado.lida %}nao-lido{% endif %}"
+                >
+                    <span class="hub-comunicado-icon">
+                        <i class="ph-bold {% if eh_atualizacao %}ph-rocket-launch text-primary{% elif comunicado.id_sistema == 0 %}ph-globe{% else %}ph-megaphone{% endif %}"></i>
+                    </span>
+                    <span class="hub-comunicado-body">
+                        <span class="hub-comunicado-topline">
+                            <strong>{{ comunicado.titulo }}</strong>
+                            {% if comunicado.versao %}
+                                <span class="badge badge-sm" style="background: rgba(29, 99, 216, 0.1); color: #1d63d8; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-family: monospace; margin-left: 4px;">v{{ comunicado.versao|replace('v', '') }}</span>
+                            {% endif %}
+                            {% if comunicado.fixado %}<i class="ph-fill ph-push-pin" title="Publicação fixada"></i>{% endif %}
+                        </span>
+                        <span class="hub-comunicado-resumo">{{ (comunicado.resumo or comunicado.conteudo)|truncate(92, true) }}</span>
+                    </span>
+                    {% if not comunicado.lida %}<span class="hub-comunicado-dot" title="Não lido"></span>{% endif %}
+                    <i class="ph-bold ph-caret-right hub-comunicado-chevron"></i>
+                </a>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="hub-comunicados-empty-content">
+                <div class="hub-empty-notice">
+                    <i class="ph-bold ph-bell-simple-slash"></i>
+                    <span>Nenhum comunicado ou atualização no momento.</span>
+                </div>
+            </div>
+            {% endif %}
+            </div>
+        </article>
+
+        <!-- Card 3: Precisa de ajuda? -->
+        <article class="hub-bottom-widget hub-widget-suporte">
+            <div class="hub-suporte-content">
+                <div class="hub-suporte-info">
+                    <h3>Precisa de ajuda?</h3>
+                    <p>Acesse nossa central de suporte e encontre respostas rápidas.</p>
+                    <a href="https://luftlogistics.desk.ms/?Login" class="hub-suporte-btn">
+                        <span>Suporte</span>
+                        <i class="ph-bold ph-arrow-right"></i>
+                    </a>
+                </div>
+                <div class="hub-suporte-avatar">
+                    <i class="ph-bold ph-headset"></i>
+                </div>
+            </div>
+        </article>
+    </div>
+</div>
+
+<!-- ==================== SCRIPT DE GERENCIAMENTO DA HOME ==================== -->
 <script>
-document.addEventListener('DOMContentLoaded', () => {
-    const cards = document.querySelectorAll('.hub-bento-card');
-    cards.forEach(card => {
-        card.addEventListener('mousemove', e => {
-            const rect = card.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            card.style.setProperty('--mouse-x', `${x}px`);
-            card.style.setProperty('--mouse-y', `${y}px`);
+(() => {
+    // 1. CARROSSEL DE IMAGENS DO BANNER (Transição Suave)
+    const initHeroCarousel = () => {
+        const slides = document.querySelectorAll('.hub-hero-slide');
+        if (slides.length <= 1) return;
+
+        let currentIndex = 0;
+        const totalSlides = slides.length;
+        const intervalTime = 4500; // 4.5 segundos por slide
+
+        setInterval(() => {
+            slides[currentIndex].classList.remove('active');
+            slides[currentIndex].setAttribute('aria-hidden', 'true');
+
+            currentIndex = (currentIndex + 1) % totalSlides;
+
+            slides[currentIndex].classList.add('active');
+            slides[currentIndex].setAttribute('aria-hidden', 'false');
+        }, intervalTime);
+    };
+
+    // 2. GERENCIAMENTO DE FAVORITOS VIA CACHE (localStorage)
+    const STORAGE_KEY_FAVORITOS = 'luft_workspace_favoritos';
+    const STORAGE_KEY_RECENTES = 'luft_workspace_recentes';
+
+    const getFavoritos = () => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_FAVORITOS);
+            return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+            console.error('Erro ao ler favoritos do cache:', e);
+            return [];
+        }
+    };
+
+    const saveFavoritos = (favoritos) => {
+        try {
+            localStorage.setItem(STORAGE_KEY_FAVORITOS, JSON.stringify(favoritos));
+        } catch (e) {
+            console.error('Erro ao salvar favoritos no cache:', e);
+        }
+    };
+
+    const atualizarKpiFavoritos = (count) => {
+        const kpiEl = document.getElementById('kpi-favoritos-contador');
+        if (kpiEl) kpiEl.textContent = count;
+    };
+
+    const aplicarEstadoFavoritos = () => {
+        const favoritos = getFavoritos();
+        atualizarKpiFavoritos(favoritos.length);
+
+        const cards = document.querySelectorAll('.hub-system-card');
+        cards.forEach(card => {
+            const sysId = card.getAttribute('data-system-id');
+            const isFav = favoritos.includes(sysId);
+            const favBtn = card.querySelector('.hub-favorite-btn');
+            const starIcon = favBtn ? favBtn.querySelector('i') : null;
+
+            if (isFav) {
+                card.classList.add('is-favorite');
+                if (favBtn) favBtn.classList.add('active');
+                if (starIcon) {
+                    starIcon.className = 'ph-fill ph-star';
+                }
+            } else {
+                card.classList.remove('is-favorite');
+                if (favBtn) favBtn.classList.remove('active');
+                if (starIcon) {
+                    starIcon.className = 'ph-bold ph-star';
+                }
+            }
         });
+    };
+
+    const alternarFavorito = (sysId) => {
+        let favoritos = getFavoritos();
+        if (favoritos.includes(sysId)) {
+            favoritos = favoritos.filter(id => id !== sysId);
+        } else {
+            favoritos.push(sysId);
+        }
+        saveFavoritos(favoritos);
+        aplicarEstadoFavoritos();
+
+        // Se estiver na aba de favoritos, reaplica o filtro
+        const activeTab = document.querySelector('.hub-tab-btn.active');
+        if (activeTab && activeTab.getAttribute('data-tab') === 'favoritos') {
+            filtrarSistemas('favoritos');
+        }
+    };
+
+    // 3. ACESSOS RECENTES (Cache & Fallback)
+    const getRecentes = () => {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_RECENTES);
+            if (raw) return JSON.parse(raw);
+        } catch (e) {}
+
+        // Fallback idêntico ao mockup se o usuário nunca tiver clicado ainda
+        return [
+            { id: '0', nome: 'Luft-WorkSpace', icone: 'ph-bold ph-house', link: '#', tempoFormatado: 'Há 2 horas' },
+            { id: '1', nome: 'Luft-ConnectAir', icone: 'ph-bold ph-airplane-tilt', link: '#', tempoFormatado: 'Ontem, 14:32' },
+            { id: '5', nome: 'Luft-Docs', icone: 'ph-bold ph-book', link: '#', tempoFormatado: '04/09/2026, 10:15' }
+        ];
+    };
+
+    const registrarAcessoRecente = (item) => {
+        let recentes = getRecentes();
+        // Remove duplicatas anteriores do mesmo sistema
+        recentes = recentes.filter(r => r.id !== item.id && r.nome !== item.nome);
+        // Insere no início
+        recentes.unshift({
+            ...item,
+            timestamp: Date.now(),
+            tempoFormatado: 'Agora mesmo'
+        });
+        // Mantém os 8 mais recentes
+        recentes = recentes.slice(0, 8);
+        try {
+            localStorage.setItem(STORAGE_KEY_RECENTES, JSON.stringify(recentes));
+        } catch (e) {}
+        renderizarListaRecentes();
+    };
+
+    const renderizarListaRecentes = () => {
+        const container = document.getElementById('hub-recent-items-list');
+        if (!container) return;
+
+        const recentes = getRecentes().slice(0, 3);
+        if (recentes.length === 0) {
+            container.innerHTML = '<li class="hub-recent-empty">Nenhum sistema acessado recentemente.</li>';
+            return;
+        }
+
+        container.innerHTML = recentes.map(item => `
+            <li class="hub-recent-item" data-id="${item.id}">
+                <div class="hub-recent-item-icon">
+                    <i class="${item.icone || 'ph-bold ph-app-window'}"></i>
+                </div>
+                <span class="hub-recent-item-name">${item.nome}</span>
+                <span class="hub-recent-item-time">${item.tempoFormatado || 'Recente'}</span>
+                <i class="ph-bold ph-caret-right hub-recent-chevron"></i>
+            </li>
+        `).join('');
+
+        // Clicar no item recente abre o sistema correspondente se houver card
+        container.querySelectorAll('.hub-recent-item').forEach(li => {
+            li.addEventListener('click', () => {
+                const id = li.getAttribute('data-id');
+                const card = document.querySelector(`.hub-system-card[data-system-id="${id}"]`);
+                if (card) {
+                    const link = card.querySelector('.hub-launch-link');
+                    if (link) link.click();
+                }
+            });
+        });
+    };
+
+    // 4. FILTROS POR ABA E KPIS
+    let filtroAtual = 'todos';
+
+    const filtrarSistemas = (filtro) => {
+        filtroAtual = filtro;
+        const cards = document.querySelectorAll('.hub-system-card');
+        const emptyState = document.getElementById('hub-empty-state');
+        let visiveis = 0;
+
+        const recentesIds = getRecentes().map(r => String(r.id));
+
+        cards.forEach(card => {
+            const isFav = card.classList.contains('is-favorite');
+            const status = card.getAttribute('data-system-status');
+            const sysId = card.getAttribute('data-system-id');
+
+            let mostrar = false;
+            if (filtro === 'todos') {
+                mostrar = true;
+            } else if (filtro === 'favoritos') {
+                mostrar = isFav;
+            } else if (filtro === 'operacionais') {
+                mostrar = (status === 'operacional');
+            } else if (filtro === 'manutencao') {
+                mostrar = (status === 'manutencao');
+            } else if (filtro === 'recentes') {
+                mostrar = recentesIds.includes(sysId);
+            }
+
+            if (mostrar) {
+                card.style.display = '';
+                visiveis++;
+            } else {
+                card.style.display = 'none';
+            }
+        });
+
+        if (emptyState) {
+            emptyState.style.display = visiveis === 0 ? 'flex' : 'none';
+        }
+    };
+
+    // 5. ORDENAÇÃO DOS CARDS
+    const ordenarCards = (criterio) => {
+        const grid = document.getElementById('hub-systems-grid');
+        const cards = Array.from(grid.querySelectorAll('.hub-system-card'));
+        const emptyState = document.getElementById('hub-empty-state');
+
+        cards.sort((a, b) => {
+            const nomeA = (a.getAttribute('data-system-name') || '').toLowerCase();
+            const nomeB = (b.getAttribute('data-system-name') || '').toLowerCase();
+            const statusA = a.getAttribute('data-system-status');
+            const statusB = b.getAttribute('data-system-status');
+
+            if (criterio === 'nome-asc') {
+                return nomeA.localeCompare(nomeB);
+            } else if (criterio === 'nome-desc') {
+                return nomeB.localeCompare(nomeA);
+            } else if (criterio === 'status-operacional') {
+                if (statusA === statusB) return nomeA.localeCompare(nomeB);
+                return statusA === 'operacional' ? -1 : 1;
+            } else if (criterio === 'status-manutencao') {
+                if (statusA === statusB) return nomeA.localeCompare(nomeB);
+                return statusA === 'manutencao' ? -1 : 1;
+            }
+            return 0;
+        });
+
+        cards.forEach(card => grid.appendChild(card));
+        if (emptyState) grid.appendChild(emptyState);
+    };
+
+    // 6. FEED DE COMUNICADOS E ATUALIZAÇÕES EM TEMPO QUASE REAL
+    const criarItemComunicado = (comunicado) => {
+        const link = document.createElement('a');
+        const prioridade = String(comunicado.prioridade || 'NORMAL').toLowerCase();
+        link.href = comunicado.url;
+        link.className = `hub-comunicado-item prioridade-${prioridade}${comunicado.lida ? '' : ' nao-lido'}`;
+
+        const isAtualizacao = (comunicado.tipo_publicacao === 'ATUALIZACAO');
+        const iconBox = document.createElement('span');
+        iconBox.className = 'hub-comunicado-icon';
+        const icon = document.createElement('i');
+        if (isAtualizacao) {
+            icon.className = 'ph-bold ph-rocket-launch text-primary';
+        } else if (comunicado.id_sistema === 0) {
+            icon.className = 'ph-bold ph-globe';
+        } else {
+            icon.className = 'ph-bold ph-megaphone';
+        }
+        iconBox.appendChild(icon);
+
+        const body = document.createElement('span');
+        body.className = 'hub-comunicado-body';
+        const topline = document.createElement('span');
+        topline.className = 'hub-comunicado-topline';
+        const title = document.createElement('strong');
+        title.textContent = comunicado.titulo || (isAtualizacao ? 'Nota de Atualização' : 'Comunicado');
+        topline.appendChild(title);
+        if (comunicado.versao) {
+            const versionBadge = document.createElement('span');
+            versionBadge.className = 'badge badge-sm';
+            versionBadge.style.cssText = 'background: rgba(29, 99, 216, 0.1); color: #1d63d8; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-family: monospace; margin-left: 4px;';
+            versionBadge.textContent = `v${comunicado.versao.replace('v', '')}`;
+            topline.appendChild(versionBadge);
+        }
+        if (comunicado.fixado) {
+            const pin = document.createElement('i');
+            pin.className = 'ph-fill ph-push-pin';
+            pin.title = 'Publicação fixada';
+            topline.appendChild(pin);
+        }
+        const summary = document.createElement('span');
+        summary.className = 'hub-comunicado-resumo';
+        const summaryText = comunicado.resumo || comunicado.conteudo || '';
+        summary.textContent = summaryText.length > 92 ? `${summaryText.slice(0, 89)}...` : summaryText;
+        body.append(topline, summary);
+
+        link.append(iconBox, body);
+        if (!comunicado.lida) {
+            const dot = document.createElement('span');
+            dot.className = 'hub-comunicado-dot';
+            dot.title = 'Não lido';
+            link.appendChild(dot);
+        }
+        const chevron = document.createElement('i');
+        chevron.className = 'ph-bold ph-caret-right hub-comunicado-chevron';
+        link.appendChild(chevron);
+        return link;
+    };
+
+    const atualizarFeedComunicados = async () => {
+        const widget = document.querySelector('.hub-widget-comunicados[data-feed-url]');
+        const content = document.getElementById('hub-comunicados-content');
+        if (!widget || !content) return;
+
+        try {
+            const response = await fetch(widget.dataset.feedUrl, {
+                credentials: 'same-origin',
+                cache: 'no-store',
+                headers: { Accept: 'application/json' }
+            });
+            if (!response.ok) return;
+            const payload = await response.json();
+            if (payload.status !== 'success' || !Array.isArray(payload.dados)) return;
+
+            content.replaceChildren();
+            if (payload.dados.length) {
+                const list = document.createElement('div');
+                list.className = 'hub-comunicados-list';
+                payload.dados.forEach(item => list.appendChild(criarItemComunicado(item)));
+                content.appendChild(list);
+            } else {
+                const empty = document.createElement('div');
+                empty.className = 'hub-comunicados-empty-content';
+                const notice = document.createElement('div');
+                notice.className = 'hub-empty-notice';
+                const icon = document.createElement('i');
+                icon.className = 'ph-bold ph-bell-simple-slash';
+                const text = document.createElement('span');
+                text.textContent = 'Nenhum comunicado ou atualização no momento.';
+                notice.append(icon, text);
+                empty.appendChild(notice);
+                content.appendChild(empty);
+            }
+        } catch (error) {
+            console.debug('Feed de comunicados temporariamente indisponível.', error);
+        }
+    };
+
+    // 7. INICIALIZAÇÃO DE EVENTOS
+    document.addEventListener('DOMContentLoaded', () => {
+        initHeroCarousel();
+        aplicarEstadoFavoritos();
+        renderizarListaRecentes();
+        atualizarFeedComunicados();
+        window.setInterval(atualizarFeedComunicados, 10000);
+
+        // Botões de favoritar
+        document.querySelectorAll('.hub-favorite-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const sysId = btn.getAttribute('data-fav-id');
+                if (sysId) alternarFavorito(sysId);
+            });
+        });
+
+        // Registrar recente ao clicar em abrir sistema
+        document.querySelectorAll('.hub-launch-link').forEach(link => {
+            link.addEventListener('click', () => {
+                const item = {
+                    id: link.getAttribute('data-action-id'),
+                    nome: link.getAttribute('data-action-name'),
+                    icone: link.getAttribute('data-action-icon'),
+                    link: link.getAttribute('data-action-link')
+                };
+                registrarAcessoRecente(item);
+            });
+        });
+
+        // Abas
+        const tabBtns = document.querySelectorAll('.hub-tab-btn');
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                tabBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const tab = btn.getAttribute('data-tab');
+                filtrarSistemas(tab);
+            });
+        });
+
+        // KPIs clicáveis como atalho de filtro
+        document.querySelectorAll('.hub-kpi-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const kpiFilter = card.getAttribute('data-kpi-filter');
+                if (kpiFilter === 'favoritos' || kpiFilter === 'todos') {
+                    // Ativa a aba correspondente
+                    const targetTab = document.querySelector(`.hub-tab-btn[data-tab="${kpiFilter}"]`);
+                    if (targetTab) targetTab.click();
+                } else {
+                    tabBtns.forEach(b => b.classList.remove('active'));
+                    filtrarSistemas(kpiFilter);
+                }
+            });
+        });
+
+        // Alternador de Visualização (Grade / Lista)
+        const gridContainer = document.getElementById('hub-systems-grid');
+        const btnGrid = document.getElementById('btn-view-grid');
+        const btnList = document.getElementById('btn-view-list');
+
+        if (btnGrid && btnList && gridContainer) {
+            btnGrid.addEventListener('click', () => {
+                btnGrid.classList.add('active');
+                btnList.classList.remove('active');
+                gridContainer.classList.remove('is-list-view');
+            });
+
+            btnList.addEventListener('click', () => {
+                btnList.classList.add('active');
+                btnGrid.classList.remove('active');
+                gridContainer.classList.add('is-list-view');
+            });
+        }
+
+        // Ordenação
+        const sortSelect = document.getElementById('hub-sort-select');
+        if (sortSelect) {
+            sortSelect.addEventListener('change', (e) => {
+                ordenarCards(e.target.value);
+            });
+        }
+
+        // Botão ver mais recentes
+        const btnMaisRecentes = document.getElementById('btn-ver-mais-recentes');
+        if (btnMaisRecentes) {
+            btnMaisRecentes.addEventListener('click', () => {
+                const targetTab = document.querySelector('.hub-tab-btn[data-tab="recentes"]');
+                if (targetTab) targetTab.click();
+            });
+        }
     });
-});
+})();
 </script>
 {% endblock %}

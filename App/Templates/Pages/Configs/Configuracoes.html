@@ -1,0 +1,17 @@
+{% extends "luftcore/seguranca/painel_admin.html" %}
+
+{#
+    Ponto de extensão do Painel de Controle para particularidades futuras
+    do Luft Workspace. Sem customizações, o conteúdo permanece integralmente
+    fornecido pelo LuftCore.
+#}
+
+{% block extra_cards_configuracoes %}
+{{ super() }}
+{# Adicione aqui os cards específicos do Workspace. #}
+{% endblock %}
+
+{% block config_custom %}
+{{ super() }}
+{# Adicione aqui conteúdo complementar da aba Configurações Gerais. #}
+{% endblock %}

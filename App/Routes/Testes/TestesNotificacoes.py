@@ -4,6 +4,9 @@ from flask import current_app
 from flask_login import login_required
 from App.Routes.Principal import PrincipalBp
 
+USUARIO = 2280
+GRUPO = 6
+
 # --- ROTAS PARA TESTE DE MECÂNICAS DE NOTIFICAÇÃO ---
 
 @PrincipalBp.route("/api/teste-notificacao/usuario", methods=["GET"])
@@ -17,7 +20,7 @@ def ApiTesteNotificacaoUsuario():
                 mensagem="Olá Usuário, esta notificação foi disparada especificamente para você!",
                 tipo="SUCESSO",
                 categoria="USUARIO",
-                id_usuario_destino=3049
+                id_usuario_destino=USUARIO
             )
             return {"status": "ok", "mensagem": "Enviada para o usuário logado!"}
         except Exception as e:
@@ -37,7 +40,7 @@ def ApiTesteNotificacaoGrupo():
                 mensagem="Todos os membros com o seu mesmo nível de acesso e cargo devem estar recebendo isso.",
                 tipo="INFO",
                 categoria="GERAL",
-                id_grupo_destino=56
+                id_grupo_destino=GRUPO
             )
             return {"status": "ok", "mensagem": "Enviada para o grupo!"}
         except Exception as e:
@@ -58,7 +61,7 @@ def ApiTesteNotificacaoContexto():
                 tipo="INFO",
                 categoria="GERAL",
                 metadados={
-                    "acao_url": "/admin/sistemas",
+                    "acao_url": "/configuracoes",
                     "texto_link": "Ler Comunicado na Íntegra"
                 }
             )

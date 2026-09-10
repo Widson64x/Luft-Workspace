@@ -8,7 +8,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any
-from sqlalchemy import func
 
 from luftcore.modules.seguranca import Tb_PermissaoGrupo, Tb_PermissaoUsuario, Tb_Sistema
 
@@ -117,6 +116,7 @@ class ServicoSistemasHub:
 			sistemas_ativos = (
 				sessao.query(Tb_Sistema)
 				.filter(Tb_Sistema.Ativo == True)
+				.filter(Tb_Sistema.Id_Sistema != 0)
 				.order_by(Tb_Sistema.Nome_Sistema.asc())
 				.all()
 			)
@@ -150,68 +150,5 @@ class ServicoSistemasHub:
 				)
 
 			return retorno
-		finally:
-			sessao.close()
-
-	def listarSistemasParaAdministracao(self) -> list[Tb_Sistema]:
-		"""Lista todos os sistemas para a tela administrativa."""
-		sessao = self._securityManager.session_factory()
-		try:
-			return sessao.query(Tb_Sistema).order_by(Tb_Sistema.Id_Sistema.asc()).all()
-		finally:
-			sessao.close()
-
-	def salvarSistema(self, payload: dict[str, Any]) -> Tb_Sistema:
-		"""Cria ou atualiza um sistema no catalogo central.
-
-		Parametros:
-		payload: Dicionario com os campos do formulario administrativo.
-
-		Retorno:
-		Tb_Sistema: Entidade persistida apos commit.
-		"""
-		id_sistema = int(payload.get("idSistema") or 0)
-		nome_sistema_informado = str(payload.get("nomeSistema") or "").strip()
-		sessao = self._securityManager.session_factory()
-		try:
-			if id_sistema > 0:
-				sistema = sessao.query(Tb_Sistema).filter(Tb_Sistema.Id_Sistema == id_sistema).first()
-				if not sistema:
-					raise ValueError("Sistema informado nao foi encontrado.")
-			else:
-				# Se o cliente enviar id=0 em um fluxo de edicao, reaproveita o registro existente por nome.
-				sistema_existente = None
-				if nome_sistema_informado:
-					sistema_existente = (
-						sessao.query(Tb_Sistema)
-						.filter(func.lower(Tb_Sistema.Nome_Sistema) == nome_sistema_informado.lower())
-						.first()
-					)
-
-				if sistema_existente:
-					sistema = sistema_existente
-				else:
-					sistema = Tb_Sistema()
-					sessao.add(sistema)
-
-			sistema.Nome_Sistema = nome_sistema_informado
-			sistema.Descricao_Sistema = str(payload.get("descricaoSistema") or "").strip() or None
-			sistema.Ativo = bool(payload.get("ativo", True))
-			sistema.Em_Manutencao = bool(payload.get("emManutencao", False))
-			sistema.Icone = str(payload.get("icone") or "").strip() or None
-			sistema.Link = str(payload.get("link") or "").strip() or None
-
-			id_permissao_base = payload.get("idPermissaoBase")
-			sistema.Id_Permissao_Base = int(id_permissao_base) if id_permissao_base not in (None, "") else None
-
-			if not sistema.Nome_Sistema:
-				raise ValueError("Nome do sistema e obrigatorio.")
-
-			sessao.commit()
-			sessao.refresh(sistema)
-			return sistema
-		except Exception:
-			sessao.rollback()
-			raise
 		finally:
 			sessao.close()

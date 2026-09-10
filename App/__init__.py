@@ -10,25 +10,31 @@ import os
 from datetime import timedelta
 
 from dotenv import load_dotenv
-from flask import Flask, current_app, redirect, request, session, url_for
+from flask import Flask, current_app, session
 from flask_login import current_user
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 from luftcore.extensions.flask_extension import LuftCorePackages, LuftUser
 from luftcore.extensions.seguranca_extension import LuftSecurity
-from luftcore.extensions.auditoria_extension import LuftAuditoria
-from luftcore.modules.seguranca import (
-    Tb_LogAcesso,
+from luftcore.modules.auditoria import LuftAuditoria
+from App.Models.SqlServer.Usuario import Usuario, UsuarioGrupo
+from App.Models.SqlServer.Permissoes import (
     Tb_Permissao,
     Tb_PermissaoGrupo,
     Tb_PermissaoUsuario,
-    Usuario,
-    UsuarioGrupo,
+    Tb_LogAcesso,
+    Tb_LogDetalhe,
 )
-from luftcore.modules.seguranca.services import LuftPermissionService
-
 from App.Db.Connections import GetSqlServerSession
 from App.Services.Admin.SistemasHubService import ServicoSistemasHub
+
+
+try:
+    from _version import __version__
+except ImportError:
+    from ._version import __version__
+except ImportError:
+    __version__ = "0.1.0"
 
 load_dotenv()
 
@@ -162,7 +168,7 @@ def CriarApp() -> Flask:
     )
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
-    app.secret_key = os.getenv("APP_SECRET_KEY", "hub-central-dev")
+    app.secret_key = os.getenv("APP_SECRET_KEY", "gAAAAABqTWMijKXcZkhPlaQvDXxciI2tqksklJWs1ehCYn9sEoWzqL7WPtmjCekhqqrwVV7_31KmNCZbmZZS0z9pmYLvI4gJFw==")
     ConfigurarSessaoCompartilhada(app)
     ConfigurarPoliticaSsoGlobal(app)
 
@@ -178,7 +184,9 @@ def CriarApp() -> Flask:
 
     LuftCorePackages(
         app=app,
-        nome_app=os.getenv("APP_NAME", "Luft Hub"),
+        nome_app=os.getenv("APP_NAME", "Luft WorkSpace"),
+        tipo_versao_app=os.getenv("APP_ENV"),
+        versao_app=__version__,
         gerenciador_usuario=gerenciador_usuario,
         habilitar_mensagens=True,
         injetar_tema=True,
@@ -227,6 +235,7 @@ def CriarApp() -> Flask:
         permissao_model=Tb_Permissao,
         permissao_grupo_model=Tb_PermissaoGrupo,
         permissao_usuario_model=Tb_PermissaoUsuario,
+        log_acesso_model=Tb_LogAcesso,
         debug_permissions=(os.getenv("DEBUG_PERMISSIONS", "false").lower() == "true"),
     )
 
@@ -237,6 +246,8 @@ def CriarApp() -> Flask:
         session_factory=GetSqlServerSession,
         sistema_id=int(os.getenv("SISTEMA_ID", "0")),
         log_acesso_model=Tb_LogAcesso,
+        log_detalhe_model=Tb_LogDetalhe,
+        log_dir=os.getenv("LOG_DIRECTORY", "Logs"),
     )
 
     from luftcore.extensions.logging_extension import ConfigurarLogsGlobais
@@ -248,10 +259,7 @@ def CriarApp() -> Flask:
 
     @app.before_request
     def RenovarSessaoSsoQuandoAutenticado() -> None:
-        """Aplica políticas globais por requisição (legado + sessão SSO).
-
-        Redireciona a rota administrativa legada para a tela consolidada
-        de sistemas e renova metadados da sessão para SSO global.
+        """Renova os metadados da sessão compartilhada para SSO global.
 
         A sessão compartilhada permite o passe livre entre aplicações que
         utilizam a mesma chave e os mesmos parâmetros de cookie.
@@ -259,10 +267,6 @@ def CriarApp() -> Flask:
         Retorno:
         None
         """
-        caminho_normalizado = request.path.rstrip("/") or "/"
-        if caminho_normalizado == "/admin":
-            return redirect(url_for("Principal.PainelSistemas"), code=302)
-
         if not app.config.get("LUFT_SSO_GLOBAL_ATIVO", True):
             return
 
@@ -280,66 +284,29 @@ def CriarApp() -> Flask:
             pass
 
     @app.context_processor
-    def InjetarPermissoesLayout():
-        """Injeta dados globais de layout para navegação lateral e permissões.
+    def InjetarNavegacaoLayout():
+        """Injeta os sistemas visíveis na navegação lateral.
 
         Retorno:
-        dict: Flags e listas utilizadas para renderizar a árvore de navegação.
+        dict: Sistemas e configurações globais utilizados pelo layout.
         """
         if not current_user.is_authenticated:
             return {
-                "PodeAdministrarHub": False,
                 "SistemasMenu": [],
             }
 
-        permission_service = LuftPermissionService(current_app.extensions["luft_security"])
-        pode_administrar = permission_service.verificar_permissao(current_user, "ADMIN.PAINEL.VISUALIZAR")
-
         try:
-            from App.Services.Admin.ConfiguracoesHubService import ServicoConfiguracoesHub
             security_manager = current_app.extensions["luft_security"]
             servico_sistemas = ServicoSistemasHub(security_manager)
-            servico_config = ServicoConfiguracoesHub(security_manager)
             sistemas_menu = servico_sistemas.listarSistemasVisiveisParaUsuario(current_user)
-            modulos_configuracao = servico_config.listarModulosPermitidos(current_user)
         except Exception as erro:
             current_app.logger.warning("Erro ao carregar menu lateral: %s", str(erro))
             sistemas_menu = []
-            modulos_configuracao = []
 
         return {
-            "PodeAdministrarHub": bool(pode_administrar),
             "SistemasMenu": sistemas_menu,
-            "ModulosConfiguracaoMenu": modulos_configuracao,
             "SsoGlobalAtivo": bool(app.config.get("LUFT_SSO_GLOBAL_ATIVO", True)),
             "SsoAplicacoesVinculadas": app.config.get("LUFT_SSO_APPS_VINCULADAS", []),
         }
 
-    if os.environ.get("WERKZEUG_RUN_MAIN") == "true" or not app.debug:
-        IniciarAgendadorWorkflowsBackground(app)
-    elif not hasattr(app, "_agendador_iniciado"):
-        app._agendador_iniciado = True
-        IniciarAgendadorWorkflowsBackground(app)
-
     return app
-
-
-def IniciarAgendadorWorkflowsBackground(app: Flask) -> None:
-    """Inicializa um worker thread em segundo plano para rodar tarefas agendadas."""
-    import threading
-    import time
-    from App.Services.Admin.OrquestracaoBancoService import ServicoOrquestracaoBanco
-
-    def worker():
-        time.sleep(3)
-        servico = ServicoOrquestracaoBanco()
-        while True:
-            try:
-                with app.app_context():
-                    servico.processarWorkflowsAgendados()
-            except Exception as erro:
-                app.logger.error("Erro no worker do Agendador de Tarefas: %s", str(erro))
-            time.sleep(15)
-
-    thread = threading.Thread(target=worker, daemon=True, name="AgendadorWorkflowsThread")
-    thread.start()
