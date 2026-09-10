@@ -1,1 +1,0 @@
-# Modulo legados substituido por OrquestracaoBancoModel.py

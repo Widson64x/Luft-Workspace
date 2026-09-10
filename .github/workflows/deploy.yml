@@ -5,12 +5,21 @@ on:
     branches:
       - main
       - homologacao
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   deploy_production:
     name: Deploy to Production
     if: github.ref == 'refs/heads/main'
     runs-on: [self-hosted, Windows, X64]
+    timeout-minutes: 30
     
     steps:
     - name: Baixar código (Runner)
@@ -59,73 +68,138 @@ jobs:
         # --- CONFIGURAÇÕES ---
         $ServiceName = "Luft-Workspace"
         $AppPath = "C:\ProjetosPython\Luft-Workspace"
-        $LogFile = "C:\GitHubRunners\Luft-Workspace\deploy-log.txt"
+        $RunnerLogPath = "C:\GitHubRunners\Luft-Workspace"
+        $LogFile = Join-Path $RunnerLogPath "deploy-log.txt"
         $NssmExe = "C:\nssm-2.24\win64\nssm.exe"
-        
-        # Inicia Log
-        if (-not (Test-Path "C:\GitHubRunners\Luft-Workspace")) { New-Item -ItemType Directory -Path "C:\GitHubRunners\Luft-Workspace" -Force }
-        Start-Transcript -Path $LogFile -Append
-        Write-Host "--- DEPLOY INICIADO: $(Get-Date) por $env:COMMIT_AUTHOR ---"
-        Write-Host "Msg: $env:COMMIT_MSG"
-        
+        $CheckoutPath = (Get-Location).Path
         $ErrorActionPreference = "Stop"
+        $TranscriptStarted = $false
+        $ServiceWasStopped = $false
 
-        Write-Host "1. Verificando estado do serviço $ServiceName..."
-        $ServiceObj = Get-Service $ServiceName -ErrorAction SilentlyContinue
-        
-        if ($ServiceObj -and $ServiceObj.Status -eq 'Running') {
-            Write-Host "Status atual: RODANDO. Tentando parar..."
-            try {
-                cmd /c "$NssmExe stop $ServiceName" 2>&1 | Out-Null
-                Start-Sleep -Seconds 5
-            } catch {
-                Write-Warning "Aviso ao tentar parar: $_"
-            }
-        } else {
-            Write-Host "O serviço já está PARADO ou não existe. Seguindo..."
+        function Wait-ServiceState {
+            param(
+                [string]$Name,
+                [string]$ExpectedStatus,
+                [int]$TimeoutSeconds = 30
+            )
+
+            $Deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+            do {
+                $CurrentService = Get-Service -Name $Name -ErrorAction SilentlyContinue
+                if ($CurrentService -and $CurrentService.Status.ToString() -eq $ExpectedStatus) {
+                    return $true
+                }
+                Start-Sleep -Seconds 1
+            } while ((Get-Date) -lt $Deadline)
+
+            return $false
         }
 
-        Write-Host "2. Copiando arquivos para $AppPath..."
-        if (-not (Test-Path $AppPath)) { 
-            New-Item -Path $AppPath -ItemType Directory -Force 
-        }
-
-        Copy-Item -Path ".\*" -Destination $AppPath -Recurse -Force -Exclude ".git",".venv"
-        Write-Host "Arquivos copiados com sucesso."
-
-        Write-Host "3. Verificando dependências..."
-        Set-Location $AppPath
-        $ErrorActionPreference = "Continue"
-
-        if (Test-Path ".venv") {
-            cmd /c ".venv\Scripts\python.exe -m pip install -r requirements.txt 2>&1"
-        } else {
-            Write-Warning "Criando venv..."
-            cmd /c "python -m venv .venv"
-            cmd /c ".venv\Scripts\python.exe -m pip install -r requirements.txt 2>&1"
-        }
-
-        $ErrorActionPreference = "Stop"
-
-        Write-Host "4. Iniciando serviço $ServiceName..."
         try {
-             cmd /c "$NssmExe start $ServiceName" 2>&1 | Out-Null
-        } catch {
-             Write-Warning "Tentativa de start retornou erro (pode já estar rodando)."
-        }
-        
-        Start-Sleep -Seconds 5
-        
-        $ServiceStatus = Get-Service $ServiceName
-        if ($ServiceStatus.Status -eq 'Running') {
-            Write-Host "SUCESSO: Serviço iniciado e rodando!"
-        } else {
-            Write-Error "FALHA CRÍTICA: O serviço não subiu."
-            Stop-Transcript; exit 1
-        }
+            New-Item -ItemType Directory -Path $RunnerLogPath -Force | Out-Null
+            Start-Transcript -Path $LogFile -Append
+            $TranscriptStarted = $true
 
-        Write-Host "--- DEPLOY FINALIZADO ---"
-        Stop-Transcript
+            Write-Host "--- DEPLOY INICIADO: $(Get-Date) por $env:COMMIT_AUTHOR ---"
+            Write-Host "Commit: $env:GITHUB_SHA"
+            Write-Host "Mensagem: $env:COMMIT_MSG"
+
+            if (-not (Test-Path -LiteralPath $NssmExe -PathType Leaf)) {
+                throw "NSSM não encontrado em '$NssmExe'."
+            }
+
+            # Localiza o Python sem depender do PATH da conta do runner.
+            $PythonCandidates = @(
+                (Join-Path $AppPath ".venv\Scripts\python.exe"),
+                "$env:LOCALAPPDATA\Programs\Python\Python313\python.exe",
+                "C:\Users\user_b2bi\AppData\Local\Programs\Python\Python313\python.exe"
+            )
+            $PythonCommand = Get-Command python -ErrorAction SilentlyContinue
+            if ($PythonCommand) { $PythonCandidates += $PythonCommand.Source }
+            $PyCommand = Get-Command py -ErrorAction SilentlyContinue
+            if ($PyCommand) { $PythonCandidates += $PyCommand.Source }
+
+            $PythonExe = $PythonCandidates |
+                Where-Object { $_ -and (Test-Path -LiteralPath $_ -PathType Leaf) } |
+                Select-Object -First 1
+            if (-not $PythonExe) {
+                throw "Executável do Python não foi localizado no ambiente do runner."
+            }
+            Write-Host "Python selecionado: $PythonExe"
+
+            Write-Host "1. Validando e parando o serviço $ServiceName..."
+            $ServiceObj = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+            if (-not $ServiceObj) {
+                throw "O serviço Windows '$ServiceName' não está instalado."
+            }
+
+            if ($ServiceObj.Status -eq "Running") {
+                & $NssmExe stop $ServiceName | Out-Host
+                $ServiceWasStopped = $true
+                if (-not (Wait-ServiceState -Name $ServiceName -ExpectedStatus "Stopped")) {
+                    throw "O serviço '$ServiceName' não parou dentro do tempo limite."
+                }
+                Write-Host "Serviço parado com segurança."
+            } else {
+                Write-Host "Serviço já estava parado."
+            }
+
+            Write-Host "2. Sincronizando o repositório em $AppPath..."
+            New-Item -Path $AppPath -ItemType Directory -Force | Out-Null
+            & $PythonExe "$CheckoutPath\Utils\DeployMirror.py" $CheckoutPath $AppPath
+            if ($LASTEXITCODE -ne 0) {
+                throw "Falha ao sincronizar os arquivos da aplicação."
+            }
+
+            Write-Host "3. Preparando ambiente virtual e dependências..."
+            Set-Location $AppPath
+            $VenvPython = Join-Path $AppPath ".venv\Scripts\python.exe"
+            if (-not (Test-Path -LiteralPath $VenvPython -PathType Leaf)) {
+                Write-Host "Criando ambiente virtual..."
+                & $PythonExe -m venv .venv
+                if ($LASTEXITCODE -ne 0) {
+                    throw "Falha ao criar o ambiente virtual."
+                }
+            }
+
+            & $VenvPython -m pip install --disable-pip-version-check -r requirements.txt
+            if ($LASTEXITCODE -ne 0) {
+                throw "Falha ao instalar as dependências da aplicação."
+            }
+
+            Write-Host "4. Validando sintaxe da versão recebida..."
+            & $VenvPython -m compileall -q App App.py Wsgi.py
+            if ($LASTEXITCODE -ne 0) {
+                throw "A validação de sintaxe da aplicação falhou."
+            }
+
+            Write-Host "5. Iniciando serviço $ServiceName..."
+            & $NssmExe start $ServiceName | Out-Host
+            if (-not (Wait-ServiceState -Name $ServiceName -ExpectedStatus "Running")) {
+                throw "O serviço '$ServiceName' não iniciou dentro do tempo limite."
+            }
+
+            $ServiceWasStopped = $false
+            Write-Host "SUCESSO: serviço iniciado e rodando."
+            Write-Host "--- DEPLOY FINALIZADO ---"
+        } catch {
+            Write-Host "FALHA CRÍTICA NO DEPLOY: $($_.Exception.Message)" -ForegroundColor Red
+
+            if ($ServiceWasStopped) {
+                Write-Warning "Tentando religar o serviço após a falha do deploy..."
+                & $NssmExe start $ServiceName | Out-Host
+                if (-not (Wait-ServiceState -Name $ServiceName -ExpectedStatus "Running" -TimeoutSeconds 20)) {
+                    Write-Warning "O serviço não pôde ser recuperado automaticamente. Consulte $LogFile."
+                }
+            }
+
+            throw
+        } finally {
+            Set-Location $CheckoutPath
+            if ($TranscriptStarted) {
+                Stop-Transcript
+            }
+        }
 
   deploy_homologation:
     name: Deploy to Homologation

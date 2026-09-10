@@ -1,29 +1,23 @@
 # Luft Workspace
 
-O **Luft Workspace** e o portal central, plataforma base e motor de integracao do ecossistema Luft. Ele fornece a infraestrutura foundational, autenticacao unificada, motor de ETL/orquestracao de dados e suporte a microservicos como **Luft-Control**, **Luft-ConnectAir**, **Luft-Docs**, **Luft-Integrador**, entre outros.
+O **Luft Workspace** e o portal central e a plataforma base do ecossistema Luft. Ele fornece autenticacao unificada, administracao dos sistemas e suporte a microservicos como **Luft-Control**, **Luft-ConnectAir**, **Luft-Docs**, **Luft-Integrador**, entre outros.
 
 ---
 
 ## Arquitetura e Modulos Principais
 
-### 1. Orquestracao de Bancos de Dados (Motor ETL)
-- **Execucao Multi-Banco:** Integracao direta entre SQL Server, Oracle e PostgreSQL sem dependencia de Linked Servers.
-- **Mapeamento Inteligente de Campos:** Interface visual com suporte a transformacoes dinamicas (Trim, Maiusculas, Formatação de Data, Template, Valores Padrao, Auto-Sequencial).
-- **Preview em Tempo Real & Teste de Query:** Editor SQL com destaque de sintaxe e autocomplete de variaveis e colunas da origem.
-- **Carga Flexivel:** Modos `APPEND`, `TRUNCATE_APPEND` e `QUERY_DESTINO` customizada com comando `MERGE INTO`.
-- **Agendamento Monitorado:** Agendamentos periodicos, diarios ou sob demanda com historico detalhado de execucoes.
-
-### 2. Gestao de Credenciais & HashiCorp Vault
-- **Conexoes Reutilizaveis:** Armazenamento seguro de segredos de banco de dados diretamente no HashiCorp Vault.
-- **Abstracao de Conexao:** Centralizacao do ciclo de vida das credenciais compartilhadas pelo ecossistema.
-
-### 3. Seguranca e Permissoes (RBAC)
+### 1. Seguranca e Permissoes (RBAC)
 - **LuftSecurity & LuftPermissionService:** Controle granular de acesso baseado em permissoes especificas por perfil e recurso.
 - **Sessao Compartilhada:** Cookie de sessao unico para navegacao transparente entre o Hub e os microservicos cadastrados.
 
-### 4. Operacoes de Ambiente & Diagnostico
+### 2. Operacoes de Ambiente & Diagnostico
 - **Gerenciador de `.env`:** Leitura e atualizacao parametrizada de variaveis de ambiente de projetos vinculados.
 - **Diagnostico Automatizado:** Script de migracao e verificacao dinamica da estrutura de tabelas no banco de dados.
+- **Painel Centralizado:** Permissoes, aplicacoes e ambiente sao administrados pelas abas da rota `/configuracoes`, fornecida pelo LuftCore.
+
+### Extensoes futuras do Painel de Controle
+
+O template `App/Templates/Pages/Configs/Configuracoes.html` herda o painel do LuftCore sem alterar seu conteudo. Particularidades futuras do Workspace podem ser adicionadas pelos blocos de extensao `extra_tabs`, `extra_cards_configuracoes`, `config_custom` e `extra_tab_panels`.
 
 ---
 
@@ -49,7 +43,7 @@ O **Luft Workspace** e o portal central, plataforma base e motor de integracao d
 ### Requisitos Tecnicos
 - **Python:** 3.10 ou superior.
 - **Banco de Dados:** Microsoft SQL Server (instancia de homologacao/producao).
-- **Drivers:** ODBC Driver 17 for SQL Server, Oracle Instant Client (quando aplicavel ao ecossistema).
+- **Drivers:** ODBC Driver 17 for SQL Server.
 - **Vault:** Acesso configurado ao servidor HashiCorp Vault da organizacao.
 
 ### Configuracao e Execucao Local

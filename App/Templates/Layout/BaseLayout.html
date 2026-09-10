@@ -2,66 +2,159 @@
 {% import 'luftcore/components.html' as ui %}
 
 {% block titulo %}
-{% block title %}Luft Hub{% endblock %}
+{% block title %}Luft Workspace{% endblock %}
 {% endblock %}
 
 {% block extra_head %}
 <link rel="stylesheet" href="{{ url_for('static', filename='Css/Hub.css') }}">
 {% endblock %}
 
+{% block sidebar_brand %}
+<div class="luft-logo">
+    <div class="luft-logo-icon-wrapper">
+        <img src="{{ url_for('luftcore.static', filename='icons/luft-logo-150x150-Dark.png') }}"
+            data-light="{{ url_for('luftcore.static', filename='icons/luft-logo-150x150-Dark.png') }}"
+            data-dark="{{ url_for('luftcore.static', filename='icons/luft-logo-150x150-Light.png') }}"
+            alt="Logo Luft Healthcare" class="luft-logo-img" style="width: 40px; height: 40px; object-fit: contain;">
+    </div>
+    <div class="luft-logo-text d-flex flex-col justify-content-center">
+        <span class="luft-logo-full font-black text-main" style="font-size: 15px; font-weight: 800; color: #0f172a; line-height: 1.15;">Luft Healthcare</span>
+        <span class="luft-logo-full text-xs" style="font-size: 11px; font-weight: 700; color: #1d63d8; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; margin-top: 2px;">LUFT-WORKSPACE</span>
+        <span class="luft-logo-mini font-black">L<span class="text-main">H</span></span>
+    </div>
+</div>
+{% endblock %}
+
 {% block sidebar_menu %}
 {% set endpoint_atual = request.endpoint or '' %}
+{% set aba_req = request.args.get('tab', '') %}
+{% set sub_req = request.args.get('sub', '') %}
 
 {% set hub_ativo = endpoint_atual == 'Principal.MenuPrincipal' %}
-{% set endpoints_config = ['Principal.ConfiguracoesHub'] %}
-{% for modulo in ModulosConfiguracaoMenu %}
-    {% set _ = endpoints_config.append(modulo.endpoint) %}
-{% endfor %}
-{% set configuracoes_ativo = endpoint_atual in endpoints_config %}
+{% set painel_controle_ativo = endpoint_atual.startswith('Configuracoes.') or endpoint_atual.startswith('Seguranca.') or endpoint_atual.startswith('Admin.') or endpoint_atual.startswith('LuftPublicacoes.painel_') %}
 
+{# Agrupador 1: Hub de Sistemas #}
 {% call ui.nav_item('Hub de Sistemas', icone='ph-bold ph-squares-four', ativo=hub_ativo) %}
-{{ ui.nav_item('Visão Geral', icone='ph-fill ph-house', href=url_for('Principal.MenuPrincipal'), ativo=(endpoint_atual == 'Principal.MenuPrincipal')) }}
-{% for sistema in SistemasMenu %}
-    {% set icone_sistema = sistema.icone or '' %}
-    {% set destino_sistema = url_for('Principal.MenuPrincipal') if 'ph-house' in icone_sistema else sistema.link %}
-    {% if destino_sistema and not sistema.emManutencao %}
-{{ ui.nav_item(sistema.nomeSistema, icone=(sistema.icone or 'ph-bold ph-app-window'), href=destino_sistema, ativo=False) }}
-    {% else %}
-{{ ui.nav_item(sistema.nomeSistema ~ ' (indisponível)', icone='ph-bold ph-lock-key', href=url_for('Principal.MenuPrincipal'), ativo=False) }}
-    {% endif %}
-{% endfor %}
+    {{ ui.nav_item('Visão Geral', icone='ph-fill ph-house', href=url_for('Principal.MenuPrincipal'), ativo=(endpoint_atual == 'Principal.MenuPrincipal')) }}
+    {% for sistema in SistemasMenu %}
+        {% set icone_sistema = sistema.icone or 'ph-bold ph-app-window' %}
+        {# Ajustes visuais por sistema #}
+        {% if 'Docs' in sistema.nomeSistema %}
+            {% set icone_sistema = 'ph-bold ph-file-text' %}
+        {% elif 'Control' in sistema.nomeSistema and sistema.emManutencao %}
+            {% set icone_sistema = 'ph-bold ph-lock-key' %}
+        {% endif %}
+        {% set destino_sistema = url_for('Principal.MenuPrincipal') if 'ph-house' in icone_sistema else sistema.link %}
+        {% if sistema.emManutencao %}
+            {{ ui.nav_item(sistema.nomeSistema, icone=icone_sistema, href='#', ativo=False, badge='indisponível') }}
+        {% else %}
+            {{ ui.nav_item(sistema.nomeSistema, icone=icone_sistema, href=(destino_sistema or '#'), ativo=False) }}
+        {% endif %}
+    {% endfor %}
 {% endcall %}
 
-{% call ui.nav_item('Configurações', icone='ph-bold ph-sliders-horizontal', ativo=configuracoes_ativo) %}
-{{ ui.nav_item('Painel Central', icone='ph-bold ph-sliders-horizontal', href=url_for('Configuracoes.visualizar_painel'), ativo=(endpoint_atual == 'Configuracoes.visualizar_painel')) }}
-{% for modulo in ModulosConfiguracaoMenu %}
-    {% if modulo.status == 'Em breve' %}
-{{ ui.nav_item(modulo.nome ~ ' (em breve)', icone=modulo.icone, href='#', ativo=False) }}
-    {% else %}
-{{ ui.nav_item(modulo.nome, icone=modulo.icone, href=url_for(modulo.endpoint), ativo=(endpoint_atual == modulo.endpoint)) }}
+{# Agrupador 2: Painel de Controle com Abas e Sub-itens #}
+{% if pode_ver_painel %}
+{% call ui.nav_item('Painel de Controle', icone='ph-bold ph-sliders-horizontal', ativo=painel_controle_ativo) %}
+    {{ ui.nav_item('Visão Geral', icone='ph-bold ph-layout', href=url_for('Configuracoes.visualizar_painel'), ativo=(endpoint_atual == 'Configuracoes.visualizar_painel' and not aba_req)) }}
+
+    {% if pode_ver_seguranca %}
+    {{ ui.nav_item('Segurança & Permissões', icone='ph-bold ph-shield-check', href=url_for('Configuracoes.visualizar_painel', tab='tab-seguranca'), ativo=(aba_req == 'tab-seguranca' or endpoint_atual.startswith('Seguranca.')), data_tab='tab-seguranca') }}
     {% endif %}
-{% endfor %}
+
+    {% if pode_ver_ambiente %}
+    {% call ui.nav_item('Aplicações & Ambiente', icone='ph-bold ph-sliders', ativo=(aba_req == 'tab-ambiente'), data_tab='tab-ambiente') %}
+        {{ ui.nav_item('Catálogo de Sistemas', icone='ph-bold ph-app-window', href=url_for('Configuracoes.visualizar_painel', tab='tab-ambiente', sub='sistemas'), ativo=(aba_req == 'tab-ambiente' and (sub_req == 'sistemas' or not sub_req)), data_tab='tab-ambiente', data_sub='sistemas') }}
+        {{ ui.nav_item('Variáveis (.env)', icone='ph-bold ph-sliders-horizontal', href=url_for('Configuracoes.visualizar_painel', tab='tab-ambiente', sub='variaveis'), ativo=(aba_req == 'tab-ambiente' and sub_req == 'variaveis'), data_tab='tab-ambiente', data_sub='variaveis') }}
+        {{ ui.nav_item('Serviços do Servidor', icone='ph-bold ph-gear-six', href=url_for('Configuracoes.visualizar_painel', tab='tab-ambiente', sub='servicos'), ativo=(aba_req == 'tab-ambiente' and sub_req == 'servicos'), data_tab='tab-ambiente', data_sub='servicos') }}
+    {% endcall %}
+    {% endif %}
+
+    {% if pode_ver_comunicados or pode_ver_atualizacoes %}
+    {% call ui.nav_item('Comunicação', icone='ph-bold ph-megaphone', ativo=(aba_req == 'tab-publicacoes' or endpoint_atual.startswith('LuftPublicacoes.painel_')), data_tab='tab-publicacoes') %}
+        {% if pode_ver_comunicados %}
+        {{ ui.nav_item('Comunicados', icone='ph-bold ph-megaphone-simple', href=url_for('LuftPublicacoes.painel_comunicados'), ativo=(endpoint_atual == 'LuftPublicacoes.painel_comunicados')) }}
+        {% endif %}
+        {% if pode_ver_atualizacoes %}
+        {{ ui.nav_item('Gestão de Changelog', icone='ph-bold ph-rocket-launch', href=url_for('LuftPublicacoes.painel_atualizacoes'), ativo=(endpoint_atual == 'LuftPublicacoes.painel_atualizacoes')) }}
+        {% endif %}
+    {% endcall %}
+    {% endif %}
+
+    {% if pode_ver_ambiente or pode_editar_ambiente %}
+    {{ ui.nav_item('Configurações Gerais', icone='ph-bold ph-gear', href=url_for('Configuracoes.visualizar_painel', tab='tab-configuracoes'), ativo=(aba_req == 'tab-configuracoes'), data_tab='tab-configuracoes') }}
+    {% endif %}
 {% endcall %}
+{% endif %}
+
+{# Ponto de Acesso Centralizado às ChangeLogs de todo o ecossistema #}
+{{ ui.nav_item('Notas de Atualização', icone='ph-bold ph-rocket-launch', href=url_for('LuftPublicacoes.listar_atualizacoes'), ativo=(endpoint_atual == 'LuftPublicacoes.listar_atualizacoes'), badge='ChangeLog') }}
+{% endblock %}
+
+{% block sidebar_user %}
+{% set usuario_nome = current_user.nome if (current_user.is_authenticated and current_user.nome) else 'widson.araujo' %}
+{% set usuario_grupo = current_user.nome_grupo if (current_user.is_authenticated and current_user.nome_grupo) else 'GRUPO TI' %}
+{% set usuario_iniciais = 'WI' if 'widson' in usuario_nome.lower() else (usuario_nome[:2]|upper) %}
+
+<div class="luft-user hover-lift" title="Perfil do Usuário">
+    <div class="luft-avatar shadow-sm">
+        <span>{{ usuario_iniciais }}</span>
+    </div>
+    <div class="luft-user-info">
+        <span class="luft-user-name">{{ usuario_nome }}</span>
+        <span class="luft-user-role">{{ usuario_grupo }}</span>
+    </div>
+    <i class="ph-bold ph-caret-right luft-user-chevron"></i>
+</div>
 {% endblock %}
 
 {% block sidebar_actions %}
-<button onclick="LuftCore.alternarTema()" class="luft-btn-action hover-lift" title="Alternar tema">
+<button type="button" onclick="LuftCore.alternarTema()" class="luft-btn-action hover-lift" title="Alternar tema">
     <i class="ph-bold ph-moon"></i>
+    <span>Tema</span>
 </button>
+{% if pode_ver_painel %}
 <a href="{{ url_for('Configuracoes.visualizar_painel') }}" class="luft-btn-action hover-lift" title="Painel de Controle">
     <i class="ph-bold ph-gear"></i>
+    <span>Configurações</span>
 </a>
-<a href="{{ url_for('Autenticacao.logout') }}" class="luft-btn-action hover-lift text-danger" title="Sair">
+{% endif %}
+<a href="{{ url_for('Autenticacao.logout') }}" class="luft-btn-action hover-lift text-danger" title="Sair do sistema">
     <i class="ph-bold ph-power"></i>
+    <span>Sair</span>
 </a>
 {% endblock %}
 
 {% block nome_usuario %}
-{{ current_user.nome if current_user.is_authenticated else 'Visitante' }}
+{{ current_user.nome if current_user.is_authenticated else 'widson.araujo' }}
 {% endblock %}
 
 {% block content %}
 <section class="hub-shell">
     {% block page_content %}{% endblock %}
 </section>
+{% endblock %}
+
+{% block extra_scripts %}
+{{ super() }}
+<script>
+    // Interceptação suave de navegação de abas pela sidebar quando já estiver no Painel de Controle
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('.luft-sidebar [data-tab]').forEach(link => {
+            if (link.tagName === 'A') {
+                link.addEventListener('click', (e) => {
+                    const path = window.location.pathname;
+                    if (path.includes('/configuracoes') || path.includes('/admin')) {
+                        const tab = link.getAttribute('data-tab');
+                        const sub = link.getAttribute('data-sub');
+                        if (tab && typeof alternarAbaPainel === 'function') {
+                            e.preventDefault();
+                            alternarAbaPainel(tab, sub, true);
+                        }
+                    }
+                });
+            }
+        });
+    });
+</script>
 {% endblock %}
