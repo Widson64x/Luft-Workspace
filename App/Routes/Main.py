@@ -6,10 +6,7 @@ rotas passam a viver em modulos separados por funcionalidade.
 
 from __future__ import annotations
 
-from App.Routes.Principal import PrincipalBp
+from App.Routes.Principal import PrincipalBp  # noqa: F401
 
 # Importacoes por efeito colateral: cada modulo anexa rotas ao mesmo blueprint.
-from App.Routes.Admin import AdminSistemas
-from App.Routes.Admin import Configuracoes
-from App.Routes.Admin import OperacoesAmbiente
-from App.Routes.Testes import TestesNotificacoes
+from App.Routes.Testes import TestesNotificacoes, TestesPublicacoes  # noqa: F401
