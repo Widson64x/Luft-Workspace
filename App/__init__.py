@@ -7,6 +7,7 @@ ativa o modulo de seguranca LuftSecurity com sistema_id = 0.
 from __future__ import annotations
 
 import os
+import platform
 from datetime import timedelta
 
 from dotenv import load_dotenv
@@ -94,6 +95,32 @@ def ResolverListaAmbiente(valor: str | None) -> list[str]:
     return [item.strip() for item in str(valor).split(",") if item and item.strip()]
 
 
+def NormalizarNomesServicosWindows() -> None:
+    """Converte configuracoes systemd preservadas no deploy para nomes do SCM.
+
+    O arquivo .env e compartilhado entre homologacao Linux e producao Windows.
+    No Windows, valores terminados em ``.service`` fariam o LuftCore consultar
+    nomes inexistentes no Service Control Manager. Somente o catalogo novo e
+    explicitamente suportado e normalizado aqui; servicos Luft legados nao sao
+    descobertos nem adicionados ao painel.
+    """
+    if platform.system().lower() != "windows":
+        return
+
+    nomes_padrao = {
+        "LUFT_WORKSPACE_SERVICE_NAME": "Luft-Workspace",
+        "LUFT_CONTROL_SERVICE_NAME": "Luft-Control",
+        "LUFT_CONNECTAIR_SERVICE_NAME": "Luft-ConnectAir",
+        "LUFT_INTEGRADOR_SERVICE_NAME": "Luft-Integrador",
+        "NGINX_SERVICE_NAME": "nginx",
+    }
+
+    for variavel, nome_padrao in nomes_padrao.items():
+        nome_configurado = (os.getenv(variavel) or "").strip()
+        if not nome_configurado or nome_configurado.lower().endswith(".service"):
+            os.environ[variavel] = nome_padrao
+
+
 def ConfigurarSessaoCompartilhada(app: Flask) -> None:
     """Aplica configuracoes de sessao para SSO entre aplicacoes Flask/LuftCore.
 
@@ -160,6 +187,8 @@ def CriarApp() -> Flask:
     Retorno:
     Flask: Instancia configurada da aplicacao.
     """
+    NormalizarNomesServicosWindows()
+
     app = Flask(
         __name__,
         template_folder=os.path.join(os.path.dirname(__file__), "Templates"),

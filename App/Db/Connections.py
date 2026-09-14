@@ -10,11 +10,17 @@ from __future__ import annotations
 import os
 from functools import lru_cache
 
+import pyodbc
 from dotenv import load_dotenv
 from luftcore.extensions.sqlalchemy_extension import SqlAlchemyExtension
 from sqlalchemy.orm import scoped_session
 
 load_dotenv()
+
+# O LuftCore usa NullPool no SQLAlchemy, mas o pyodbc mantem um segundo pool
+# nativo habilitado por padrao. Ele precisa ser desligado antes da primeira
+# conexao para que o fechamento da sessao encerre tambem o socket no SQL Server.
+pyodbc.pooling = False
 
 
 def ResolverBooleano(valor: object, padrao: bool = False) -> bool:
@@ -114,7 +120,14 @@ def GetSqlServerSession():
 def RemoverSessaoSqlServer() -> None:
     """Encerra e remove a sessao do contexto atual, liberando conexoes com o SQL Server."""
     global _SESSAO_SCOPED
-    if _SESSAO_SCOPED is not None:
+    if _SESSAO_SCOPED is None or not _SESSAO_SCOPED.registry.has():
+        return
+
+    sessao = _SESSAO_SCOPED()
+    try:
+        if sessao.in_transaction():
+            sessao.rollback()
+    finally:
         _SESSAO_SCOPED.remove()
 
 
