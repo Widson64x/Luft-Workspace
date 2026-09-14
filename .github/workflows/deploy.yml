@@ -102,7 +102,9 @@ jobs:
             }
 
             if ($ServiceObj.Status -eq "Running") {
-                & $NssmExe stop $ServiceName | Out-Host
+                $ErrorActionPreference = "Continue"
+                cmd /c "$NssmExe stop $ServiceName 2>&1" | Out-Host
+                $ErrorActionPreference = "Stop"
                 $ServiceWasStopped = $true
                 if (-not (Wait-ServiceState -Name $ServiceName -ExpectedStatus "Stopped")) {
                     throw "O serviço '$ServiceName' não parou dentro do tempo limite."
@@ -130,9 +132,16 @@ jobs:
                 }
             }
 
-            & $VenvPython -m pip install --disable-pip-version-check -r requirements.txt
-            if ($LASTEXITCODE -ne 0) {
-                throw "Falha ao instalar as dependências da aplicação."
+            # O Git usado pelo pip escreve progresso em stderr. No Windows
+            # PowerShell 5, ErrorActionPreference=Stop converte essa saída
+            # normal em NativeCommandError antes de o clone terminar.
+            $ErrorActionPreference = "Continue"
+            cmd /c ".venv\Scripts\python.exe -m pip install --disable-pip-version-check -r requirements.txt 2>&1"
+            $PipExitCode = $LASTEXITCODE
+            $ErrorActionPreference = "Stop"
+
+            if ($PipExitCode -ne 0) {
+                throw "Falha ao instalar as dependências da aplicação. Código: $PipExitCode"
             }
 
             Write-Host "4. Validando sintaxe da versão recebida..."
@@ -142,7 +151,9 @@ jobs:
             }
 
             Write-Host "5. Iniciando serviço $ServiceName..."
-            & $NssmExe start $ServiceName | Out-Host
+            $ErrorActionPreference = "Continue"
+            cmd /c "$NssmExe start $ServiceName 2>&1" | Out-Host
+            $ErrorActionPreference = "Stop"
             if (-not (Wait-ServiceState -Name $ServiceName -ExpectedStatus "Running")) {
                 throw "O serviço '$ServiceName' não iniciou dentro do tempo limite."
             }
@@ -155,7 +166,9 @@ jobs:
 
             if ($ServiceWasStopped) {
                 Write-Warning "Tentando religar o serviço após a falha do deploy..."
-                & $NssmExe start $ServiceName | Out-Host
+                $ErrorActionPreference = "Continue"
+                cmd /c "$NssmExe start $ServiceName 2>&1" | Out-Host
+                $ErrorActionPreference = "Stop"
                 if (-not (Wait-ServiceState -Name $ServiceName -ExpectedStatus "Running" -TimeoutSeconds 20)) {
                     Write-Warning "O serviço não pôde ser recuperado automaticamente. Consulte $LogFile."
                 }
