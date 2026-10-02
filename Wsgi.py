@@ -1,15 +1,10 @@
-"""Bootstrap WSGI para execucao do Hub Central."""
+"""Producao do Luft-Workspace: servidor padrao do LuftBase (Waitress).
 
-from __future__ import annotations
+Host, porta, prefixo e threads vem do .env (LUFT_SERVIDOR_* ou HOST/PORT/ROUTE_PREFIX).
+Em desenvolvimento use o App.py.
+"""
 
-import os
-
-from App import CriarApp
-
-app = CriarApp()
+from luftbase.servidor import executar
 
 if __name__ == "__main__":
-    host = os.getenv("HOST", "127.0.0.1")
-    porta = int(os.getenv("PORT", "9000"))
-    debug = os.getenv("APP_ENV", "development").strip().lower() != "production"
-    app.run(host=host, port=porta, debug=debug)
+    executar("App:CriarApp")

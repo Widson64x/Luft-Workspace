@@ -1,94 +1,85 @@
-"""Rotas de testes e desenvolvimento para envio de notificacoes."""
+"""Rotas nao produtivas para validar notificacoes do LuftBase."""
 
-from flask import current_app
-from flask_login import login_required
+import os
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
+
+from flask import abort
+from flask_login import current_user, login_required
+from luftbase import (
+    CategoriaNotificacao,
+    NovaNotificacao,
+    PermissaoLuftBase,
+    TipoNotificacao,
+    exigir_permissao,
+    obter_luftbase,
+)
+from luftbase.web.autenticacao import _validar_csrf
+
 from App.Routes.Principal import PrincipalBp
 
-USUARIO = 2280
-GRUPO = 6
 
-# --- ROTAS PARA TESTE DE MECÂNICAS DE NOTIFICAÇÃO ---
+def _permitir_teste() -> None:
+    ambiente = (os.getenv("LUFT_AMBIENTE") or "desenvolvimento").casefold()
+    if ambiente in {"prod", "producao", "production"}:
+        abort(404)
+    _validar_csrf()
 
-@PrincipalBp.route("/api/teste-notificacao/usuario", methods=["GET"])
+
+@PrincipalBp.post("/api/teste-notificacao/usuario")
 @login_required
-def ApiTesteNotificacaoUsuario():
-    notif = current_app.extensions.get("luft_notificacoes")
-    if notif:
-        try:
-            notif.criar_notificacao(
-                titulo="Notificação Direcionada",
-                mensagem="Olá Usuário, esta notificação foi disparada especificamente para você!",
-                tipo="SUCESSO",
-                categoria="USUARIO",
-                id_usuario_destino=USUARIO
-            )
-            return {"status": "ok", "mensagem": "Enviada para o usuário logado!"}
-        except Exception as e:
-            current_app.logger.exception("Erro na API Teste Notificacao Usuario")
-            return {"status": "erro", "mensagem": str(e)}, 500
-    return {"status": "erro"}, 500
+@exigir_permissao(PermissaoLuftBase.TESTES_NOTIFICACOES_EXECUTAR)
+def testar_notificacao_usuario():  # type: ignore[no-untyped-def]
+    """Envia uma notificacao somente ao usuario atual."""
+
+    _permitir_teste()
+    identificador = obter_luftbase().notificacoes.criar(
+        NovaNotificacao(
+            titulo="Notificacao direcionada",
+            mensagem="Esta notificacao foi enviada somente para voce.",
+            tipo=TipoNotificacao.SUCESSO,
+            categoria=CategoriaNotificacao.USUARIO,
+            id_usuario_destino=current_user.id_usuario,
+            criado_por=current_user.login,
+        )
+    )
+    return {"id_notificacao": identificador}, 201
 
 
-@PrincipalBp.route("/api/teste-notificacao/grupo", methods=["GET"])
+@PrincipalBp.post("/api/teste-notificacao/grupo")
 @login_required
-def ApiTesteNotificacaoGrupo():
-    notif = current_app.extensions.get("luft_notificacoes")
-    if notif:
-        try:
-            notif.criar_notificacao(
-                titulo="Notificação para seu Grupo",
-                mensagem="Todos os membros com o seu mesmo nível de acesso e cargo devem estar recebendo isso.",
-                tipo="INFO",
-                categoria="GERAL",
-                id_grupo_destino=GRUPO
-            )
-            return {"status": "ok", "mensagem": "Enviada para o grupo!"}
-        except Exception as e:
-            current_app.logger.exception("Erro na API Teste Notificacao Grupo")
-            return {"status": "erro", "mensagem": str(e)}, 500
-    return {"status": "erro"}, 500
+@exigir_permissao(PermissaoLuftBase.TESTES_NOTIFICACOES_EXECUTAR)
+def testar_notificacao_grupo():  # type: ignore[no-untyped-def]
+    """Envia uma notificacao ao grupo do usuario atual."""
+
+    _permitir_teste()
+    if current_user.id_grupo is None:
+        abort(400, description="O usuario atual nao possui grupo.")
+    identificador = obter_luftbase().notificacoes.criar(
+        NovaNotificacao(
+            titulo="Notificacao para o grupo",
+            mensagem="Todos os membros do grupo podem receber este aviso.",
+            id_grupo_destino=current_user.id_grupo,
+            criado_por=current_user.login,
+        )
+    )
+    return {"id_notificacao": identificador}, 201
 
 
-@PrincipalBp.route("/api/teste-notificacao/comunicado", methods=["GET"])
+@PrincipalBp.post("/api/teste-notificacao/agendada")
 @login_required
-def ApiTesteNotificacaoContexto():
-    notif = current_app.extensions.get("luft_notificacoes")
-    if notif:
-        try:
-            notif.criar_notificacao(
-                titulo="Novo Comunicado Interno!",
-                mensagem="A diretoria publicou um novo comunicado sobre as políticas de fim de ano.",
-                tipo="INFO",
-                categoria="GERAL",
-                metadados={
-                    "acao_url": "/configuracoes",
-                    "texto_link": "Ler Comunicado na Íntegra"
-                }
-            )
-            return {"status": "ok", "mensagem": "Enviada com link!"}
-        except Exception as e:
-            current_app.logger.exception("Erro na API Teste Notificacao Contexto")
-            return {"status": "erro", "mensagem": str(e)}, 500
-    return {"status": "erro"}, 500
+@exigir_permissao(PermissaoLuftBase.TESTES_NOTIFICACOES_EXECUTAR)
+def testar_notificacao_agendada():  # type: ignore[no-untyped-def]
+    """Agenda uma notificacao para quinze segundos no futuro."""
 
-
-@PrincipalBp.route("/api/teste-notificacao/agendada", methods=["GET"])
-@login_required
-def ApiTesteNotificacaoAgendada():
-    notif = current_app.extensions.get("luft_notificacoes")
-    if notif:
-        try:
-            from datetime import datetime, timedelta
-            exibir_em = datetime.now() + timedelta(seconds=15)
-            notif.criar_notificacao(
-                titulo="Você viajou no tempo! 🕒",
-                mensagem="Essa notificação foi criada há 15 segundos, mas só foi programada para aparecer pra você agora.",
-                tipo="INFO",
-                categoria="GERAL",
-                exibir_a_partir_de=exibir_em
-            )
-            return {"status": "ok", "mensagem": "Agendada para 15s no futuro!"}
-        except Exception as e:
-            current_app.logger.exception("Erro na API Teste Notificacao Agendada")
-            return {"status": "erro", "mensagem": str(e)}, 500
-    return {"status": "erro"}, 500
+    _permitir_teste()
+    agora = datetime.now(ZoneInfo("America/Sao_Paulo")).replace(tzinfo=None)
+    identificador = obter_luftbase().notificacoes.criar(
+        NovaNotificacao(
+            titulo="Notificacao agendada",
+            mensagem="Este aviso foi programado para aparecer depois.",
+            exibir_a_partir_de=agora + timedelta(seconds=15),
+            criado_por=current_user.login,
+        )
+    )
+    return {"id_notificacao": identificador}, 201

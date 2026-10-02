@@ -94,6 +94,10 @@ jobs:
                 throw "Executável do Python não foi localizado no ambiente do runner."
             }
             Write-Host "Python selecionado: $PythonExe"
+            & $PythonExe -c "import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)"
+            if ($LASTEXITCODE -ne 0) {
+                throw "O LuftBase exige Python 3.11 ou superior."
+            }
 
             Write-Host "1. Validando e parando o serviço $ServiceName..."
             $ServiceObj = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
@@ -116,7 +120,7 @@ jobs:
 
             Write-Host "2. Sincronizando o repositório em $AppPath..."
             New-Item -Path $AppPath -ItemType Directory -Force | Out-Null
-            & $PythonExe "$CheckoutPath\Utils\DeployMirror.py" $CheckoutPath $AppPath
+            & $PythonExe "$CheckoutPath\scripts\DeployMirror.py" $CheckoutPath $AppPath
             if ($LASTEXITCODE -ne 0) {
                 throw "Falha ao sincronizar os arquivos da aplicação."
             }
@@ -207,6 +211,8 @@ jobs:
         echo "Msg: $COMMIT_MSG"
         
         set -e
+
+        python3 -c 'import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)'
 
         echo "1. Verificando estado do serviço $SERVICE_NAME..."
         if sudo systemctl is-active --quiet $SERVICE_NAME; then

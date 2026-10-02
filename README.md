@@ -1,111 +1,89 @@
 # Luft Workspace
 
-O **Luft Workspace** e o portal central e a plataforma base do ecossistema Luft. Ele fornece autenticacao unificada, administracao dos sistemas e suporte a microservicos como **Luft-Control**, **Luft-ConnectAir**, **Luft-Docs**, **Luft-Integrador**, entre outros.
+Portal central das aplicacoes web da Luft e projeto piloto do LuftBase. O
+Workspace usa o framework para identidade LDAP, sessao compartilhada, RBAC,
+PostgreSQL `core`, notificacoes, publicacoes, auditoria, observabilidade e temas.
 
----
+## Arquitetura do piloto M10
 
-## Arquitetura e Modulos Principais
+| Responsabilidade | Implementacao |
+|---|---|
+| Inicializacao Flask | `PlataformaLuft` em `CriarApp()` (`App/__init__.py`) |
+| Login e logout global | identidade e sessao Redis do LuftBase |
+| Permissoes | decorators e consultas em lote do LuftBase |
+| Sistemas do Hub | consulta unica ao PostgreSQL `core` |
+| Publicacoes | servico, REST e SSE do LuftBase |
+| Interface e temas | template base, tokens e preferencia do LuftBase |
+| SQL Server | diretorio de usuarios/grupos, estritamente somente leitura |
+| Banco da aplicacao | schema informado no segredo PostgreSQL do Workspace |
 
-### 1. Seguranca e Permissoes (RBAC)
-- **LuftSecurity & LuftPermissionService:** Controle granular de acesso baseado em permissoes especificas por perfil e recurso.
-- **Sessao Compartilhada:** Cookie de sessao unico para navegacao transparente entre o Hub e os microservicos cadastrados.
+Nao existem models sistemicos, gerenciadores de sessao SQLAlchemy nem injecao de
+models no Workspace. Esses contratos pertencem ao LuftBase.
 
-### 2. Operacoes de Ambiente & Diagnostico
-- **Gerenciador de `.env`:** Leitura e atualizacao parametrizada de variaveis de ambiente de projetos vinculados.
-- **Diagnostico Automatizado:** Script de migracao e verificacao dinamica da estrutura de tabelas no banco de dados.
-- **Painel Centralizado:** Permissoes, aplicacoes e ambiente sao administrados pelas abas da rota `/configuracoes`, fornecida pelo LuftCore.
+## Configuracao
 
-### Extensoes futuras do Painel de Controle
+Copie `.env.example` para `.env` e informe somente a identidade da aplicacao,
+Vault, LDAP, politica de sessao e opcoes proprias do processo. Caminhos completos
+de banco nao ficam no `.env`.
 
-O template `App/Templates/Pages/Configs/Configuracoes.html` herda o painel do LuftCore sem alterar seu conteudo. Particularidades futuras do Workspace podem ser adicionadas pelos blocos de extensao `extra_tabs`, `extra_cards_configuracoes`, `config_custom` e `extra_tab_panels`.
+O LuftBase deriva automaticamente:
 
----
+```text
+luft/{ambiente}/sqlserver
+luft/{ambiente}/bancos/postgresql/conexoes/luft-web
+luft/{ambiente}/bancos/postgresql/sistemas/0
+luft/{ambiente}/redis/sessoes
+```
 
-## Modulos em Desenvolvimento (Roadmap)
+O segredo PostgreSQL precisa conter `host`, `porta`, `nome_banco`, `esquema`,
+`usuario`, `senha` e `tipo_banco=postgresql`. Use uma role dedicada, nunca
+`admin`, `postgres` ou `sa`. Ela deve acessar seu proprio schema e os objetos
+necessarios do schema `core`.
 
-### 1. Controle de APIs (API Management)
-- Gateway centralizado de APIs do ecossistema.
-- Aplicacao de limites de requisicao (*rate limiting*).
-- Proxy de autenticacao e auditoria de chamadas externas.
+O Workspace usa somente `LUFT_SISTEMA_ID=0` no bootstrap. O segredo do sistema
+informa conexao, schema, identificador e role; zero representa o escopo global e
+passa pelas mesmas regras de autorizacao, sem liberar permissoes automaticamente.
 
-### 2. Gestao de Rotas (Route Management)
-- Roteamento dinamico de requisicoes para os microservicos ativos.
-- Regras parametrizadas de proxy reverso e redirecionamento.
+## Instalacao local
 
-### 3. Observabilidade e Telemetria
-- Centralizacao de logs de execucao e metricas de performance.
-- Alertas em tempo real para falhas de integracao e timeouts.
+Use Python 3.11 ou superior.
 
----
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python App.py     # desenvolvimento (depurador e recarga automatica)
+python Wsgi.py    # producao (Waitress)
+```
 
-## Guia de Desenvolvimento
+## Estrutura
 
-### Requisitos Tecnicos
-- **Python:** 3.10 ou superior.
-- **Banco de Dados:** Microsoft SQL Server (instancia de homologacao/producao).
-- **Drivers:** ODBC Driver 17 for SQL Server.
-- **Vault:** Acesso configurado ao servidor HashiCorp Vault da organizacao.
+O Workspace segue o padrao de projeto das aplicacoes Luft (LuftBase, ADR-017), igual ao
+Luft-ConnectAir: `App/__init__.py` (fabrica `CriarApp`), `Catalogo.py`, `Conexoes.py`,
+`Configuracoes.py`, `Models/POSTGRES/`, `Routes/`, `Services/`, `Static/`, `Templates/` e
+`Utils/`, mais `App.py` (desenvolvimento) e `Wsgi.py` (producao) na raiz. O que e particular do
+Hub (catalogo de sistemas, nomes de servicos do Windows) fica no fim dos arquivos.
 
-### Configuracao e Execucao Local
+O wheel do LuftBase usado pelo piloto esta em `vendor/`, permitindo que os
+deploys Windows e Linux instalem a mesma versao sem depender de um checkout
+irmao. Para desenvolver simultaneamente o framework, use temporariamente:
 
-1. **Clonar o Repositorio:**
-   ```powershell
-   git clone <URL_DO_REPOSITORIO>
-   cd LuftIntegrador
-   ```
+```powershell
+python -m pip install --no-deps -e ..\LuftBase
+```
 
-2. **Ambiente Virtual e Dependencias:**
-   ```powershell
-   python -m venv venv
-   .\venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
+## Verificacao
 
-3. **Variaveis de Ambiente (`.env`):**
-   Crie o arquivo `.env` na raiz do projeto contendo as definicoes de banco e seguranca:
-   ```env
-   APP_NAME=Luft Workspace
-   APP_ENV=development
-   HOST=127.0.0.1
-   PORT=9000
-   ```
+```powershell
+python -m pytest tests
+python -m ruff check --ignore N999 App App.py Wsgi.py scripts tests
+python -m compileall -q App App.py Wsgi.py
+```
 
-4. **Executar a Aplicacao:**
-   ```powershell
-   py .\Wsgi.py
-   ```
-   Acesse a aplicacao em `http://127.0.0.1:9000`.
+Os testes e a factory de teste nao acessam Vault, Redis, LDAP ou bancos reais.
 
----
+## Documentacao
 
-## Padroes de Codigo do Projeto
-
-- **Nomenclatura Python:** Estritamente em `snake_case` para funcoes, metodos e variaveis; `PascalCase` para classes.
-- **Nomenclatura JavaScript:** Estritamente em `camelCase` para variaveis e funcoes; `PascalCase` para classes.
-- **Nomenclatura SQL:** Palavras-chave em `UPPER_CASE` e tabelas/colunas em `PascalCase` ou `snake_case` padronizado.
-- **Dominio em PT-BR:** Nomes de classes, metodos e variaveis de negocio devem ser redigidos em Portugues do Brasil.
-- **Documentacao:** Docstrings obrigatorias detalhando proposito, parametros (`params`) e retorno (`returns`).
-
----
-
-## Fluxo de Trabalho Git (Homologacao)
-
-1. **Criar a branch de trabalho:**
-   ```powershell
-   git checkout -b feature/nome-da-sua-feature
-   ```
-
-2. **Adicionar alteracoes e realizar commit:**
-   ```powershell
-   git add .
-   git commit -m "feat: descricao objetiva da alteracao"
-   ```
-
-3. **Enviar a branch para o remoto:**
-   ```powershell
-   git push -u origin feature/nome-da-sua-feature
-   ```
-
-4. **Abrir Pull Request (PR):**
-   - No GitHub, abra a solicitacao de merge.
-   - **ATENCAO:** Altere a branch de destino (*base branch*) de `main` para `homologacao`.
+- [Migracao do Workspace para LuftBase](docs/MIGRACAO-LUFTBASE.md)
+- [Migracao das tabelas sistemicas](docs/MIGRACAO-CORE-POSTGRESQL.md)
+- [Indice tecnico do Workspace](docs/README.md)

@@ -4,15 +4,12 @@
 
 {% block extra_head %}
 {{ super() }}
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='Css/HubHome.css', v='20260910.2') }}">
+<link rel="stylesheet" href="{{ url_for('static', filename='CSS/HubHome.css', v='20260917.1') }}">
 {% endblock %}
 
 {% block page_content %}
 {% set total_sistemas = sistemas|length %}
-{% set total_manutencao = sistemas|selectattr('emManutencao')|list|length %}
+{% set total_manutencao = sistemas|selectattr('em_manutencao')|list|length %}
 {% set total_operacionais = total_sistemas - total_manutencao %}
 
 <div class="hub-home-container">
@@ -169,9 +166,9 @@
 
             <article
                 class="hub-system-card"
-                data-system-id="{{ sistema.idSistema }}"
-                data-system-name="{{ sistema.nomeSistema }}"
-                data-system-status="{{ 'manutencao' if sistema.emManutencao else 'operacional' }}"
+                data-system-id="{{ sistema.id_sistema }}"
+                data-system-name="{{ sistema.nome }}"
+                data-system-status="{{ 'manutencao' if sistema.em_manutencao else 'operacional' }}"
                 data-system-link="{{ destino_sistema or '' }}"
                 data-system-icon="{{ icone_sistema }}"
             >
@@ -180,7 +177,7 @@
                         <i class="{{ icone_sistema }}"></i>
                     </div>
 
-                    {% if sistema.emManutencao %}
+                    {% if sistema.em_manutencao %}
                     <span class="hub-badge maintenance">
                         <span class="hub-badge-dot"></span>
                         EM MANUTENÇÃO
@@ -194,18 +191,18 @@
                 </div>
 
                 <div class="hub-card-body">
-                    <h3 class="hub-system-name">{{ sistema.nomeSistema }}</h3>
-                    <p class="hub-system-desc">{{ sistema.descricaoSistema or 'Sistema integrado ao ecossistema Luft.' }}</p>
+                    <h3 class="hub-system-name">{{ sistema.nome }}</h3>
+                    <p class="hub-system-desc">{{ sistema.descricao or 'Sistema integrado ao ecossistema Luft.' }}</p>
                 </div>
 
                 <div class="hub-card-footer">
-                    {% if destino_sistema and not sistema.emManutencao %}
+                    {% if destino_sistema and not sistema.em_manutencao %}
                     <a
                         href="{{ destino_sistema }}"
                         class="hub-action-btn primary hub-launch-link"
                         {% if abrir_nova_aba %}target="_blank" rel="noopener noreferrer"{% endif %}
-                        data-action-id="{{ sistema.idSistema }}"
-                        data-action-name="{{ sistema.nomeSistema }}"
+                        data-action-id="{{ sistema.id_sistema }}"
+                        data-action-name="{{ sistema.nome }}"
                         data-action-icon="{{ icone_sistema }}"
                         data-action-link="{{ destino_sistema }}"
                     >
@@ -223,8 +220,8 @@
                         type="button"
                         class="hub-favorite-btn"
                         title="Favoritar sistema"
-                        aria-label="Favoritar {{ sistema.nomeSistema }}"
-                        data-fav-id="{{ sistema.idSistema }}"
+                        aria-label="Favoritar {{ sistema.nome }}"
+                        data-fav-id="{{ sistema.id_sistema }}"
                     >
                         <i class="ph-bold ph-star"></i>
                     </button>
@@ -259,7 +256,8 @@
         <!-- Card 2: Avisos e comunicados (inclui comunicados e notas de atualização) -->
         <article
             class="hub-bottom-widget hub-widget-comunicados"
-            data-feed-url="{{ url_for('LuftPublicacoes.feed_comunicados', limite=4) }}"
+            data-feed-url="{{ url_for('luftbase_conteudo.listar_publicacoes', limite=4) }}"
+            data-eventos-url="{{ url_for('luftbase_conteudo.eventos_publicacoes') }}"
         >
             <div class="hub-widget-header">
                 <div class="hub-widget-title-group">
@@ -270,16 +268,16 @@
                     <a href="{{ url_for('LuftPublicacoes.listar_atualizacoes') }}" class="hub-widget-more d-flex align-items-center gap-1" title="Ver todas as notas de atualização (ChangeLog)">
                         <i class="ph-bold ph-rocket-launch"></i> ChangeLog
                     </a>
-                    <a href="{{ url_for('LuftPublicacoes.listar_comunicados') }}" class="hub-widget-more">Ver todos &rarr;</a>
+                    <a href="{{ url_for('LuftPublicacoes.listar_comunicados') }}" class="hub-widget-more" title="Ver todos os comunicados">Ver todos &rarr;</a>
                 </div>
             </div>
             <div class="hub-comunicados-content" id="hub-comunicados-content">
             {% if comunicados %}
             <div class="hub-comunicados-list">
                 {% for comunicado in comunicados %}
-                {% set eh_atualizacao = comunicado.tipo_publicacao == 'ATUALIZACAO' %}
+                {% set eh_atualizacao = comunicado.tipo == 'ATUALIZACAO' %}
                 <a
-                    href="{{ url_for('LuftPublicacoes.visualizar_publicacao', id_publicacao=comunicado.id) }}"
+                    href="{{ url_for('LuftPublicacoes.visualizar_publicacao', id_publicacao=comunicado.id_publicacao) }}"
                     class="hub-comunicado-item prioridade-{{ comunicado.prioridade|lower }} {% if not comunicado.lida %}nao-lido{% endif %}"
                 >
                     <span class="hub-comunicado-icon">
@@ -289,11 +287,11 @@
                         <span class="hub-comunicado-topline">
                             <strong>{{ comunicado.titulo }}</strong>
                             {% if comunicado.versao %}
-                                <span class="badge badge-sm" style="background: rgba(29, 99, 216, 0.1); color: #1d63d8; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-family: monospace; margin-left: 4px;">v{{ comunicado.versao|replace('v', '') }}</span>
+                                <span class="badge badge-sm" style="background: rgba(var(--luft-brand-rgb, 29, 99, 216), 0.1); color: var(--luft-brand, #1d63d8); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-family: monospace; margin-left: 4px;">v{{ comunicado.versao|replace('v', '') }}</span>
                             {% endif %}
                             {% if comunicado.fixado %}<i class="ph-fill ph-push-pin" title="Publicação fixada"></i>{% endif %}
                         </span>
-                        <span class="hub-comunicado-resumo">{{ (comunicado.resumo or comunicado.conteudo)|truncate(92, true) }}</span>
+                        <span class="hub-comunicado-resumo">{{ (comunicado.resumo or 'Consulte os detalhes desta publicacao.')|truncate(92, true) }}</span>
                     </span>
                     {% if not comunicado.lida %}<span class="hub-comunicado-dot" title="Não lido"></span>{% endif %}
                     <i class="ph-bold ph-caret-right hub-comunicado-chevron"></i>
@@ -310,8 +308,8 @@
             {% endif %}
             </div>
         </article>
-
-        <!-- Card 3: Precisa de ajuda? -->
+        <!-- Card 3: Precisa de ajuda? # COMENTADO
+     
         <article class="hub-bottom-widget hub-widget-suporte">
             <div class="hub-suporte-content">
                 <div class="hub-suporte-info">
@@ -327,6 +325,7 @@
                 </div>
             </div>
         </article>
+    -->
     </div>
 </div>
 
@@ -567,10 +566,10 @@
     const criarItemComunicado = (comunicado) => {
         const link = document.createElement('a');
         const prioridade = String(comunicado.prioridade || 'NORMAL').toLowerCase();
-        link.href = comunicado.url;
+        link.href = `/publicacoes/${comunicado.id_publicacao}`;
         link.className = `hub-comunicado-item prioridade-${prioridade}${comunicado.lida ? '' : ' nao-lido'}`;
 
-        const isAtualizacao = (comunicado.tipo_publicacao === 'ATUALIZACAO');
+        const isAtualizacao = (comunicado.tipo === 'ATUALIZACAO');
         const iconBox = document.createElement('span');
         iconBox.className = 'hub-comunicado-icon';
         const icon = document.createElement('i');
@@ -593,7 +592,7 @@
         if (comunicado.versao) {
             const versionBadge = document.createElement('span');
             versionBadge.className = 'badge badge-sm';
-            versionBadge.style.cssText = 'background: rgba(29, 99, 216, 0.1); color: #1d63d8; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-family: monospace; margin-left: 4px;';
+            versionBadge.style.cssText = 'background: rgba(var(--luft-brand-rgb, 29, 99, 216), 0.1); color: var(--luft-brand, #1d63d8); font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 4px; font-family: monospace; margin-left: 4px;';
             versionBadge.textContent = `v${comunicado.versao.replace('v', '')}`;
             topline.appendChild(versionBadge);
         }
@@ -631,17 +630,20 @@
             const response = await fetch(widget.dataset.feedUrl, {
                 credentials: 'same-origin',
                 cache: 'no-store',
-                headers: { Accept: 'application/json' }
+                headers: {
+                    Accept: 'application/json',
+                    'X-Background-Request': '1'
+                }
             });
             if (!response.ok) return;
             const payload = await response.json();
-            if (payload.status !== 'success' || !Array.isArray(payload.dados)) return;
+            if (!Array.isArray(payload.itens)) return;
 
             content.replaceChildren();
-            if (payload.dados.length) {
+            if (payload.itens.length) {
                 const list = document.createElement('div');
                 list.className = 'hub-comunicados-list';
-                payload.dados.forEach(item => list.appendChild(criarItemComunicado(item)));
+                payload.itens.forEach(item => list.appendChild(criarItemComunicado(item)));
                 content.appendChild(list);
             } else {
                 const empty = document.createElement('div');
@@ -667,7 +669,13 @@
         aplicarEstadoFavoritos();
         renderizarListaRecentes();
         atualizarFeedComunicados();
-        window.setInterval(atualizarFeedComunicados, 10000);
+        const widgetComunicados = document.querySelector('.hub-widget-comunicados[data-eventos-url]');
+        if (widgetComunicados && 'EventSource' in window) {
+            const eventos = new EventSource(widgetComunicados.dataset.eventosUrl);
+            eventos.addEventListener('publicacao', atualizarFeedComunicados);
+        } else {
+            window.setInterval(atualizarFeedComunicados, 30000);
+        }
 
         // Botões de favoritar
         document.querySelectorAll('.hub-favorite-btn').forEach(btn => {

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from Utils.DeployMirror import sincronizar_espelho
+from scripts.DeployMirror import sincronizar_espelho
 
 
 def test_espelho_atualiza_e_preserva_dados_locais(tmp_path):
