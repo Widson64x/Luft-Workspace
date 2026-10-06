@@ -27,7 +27,10 @@ def main():
     parser.add_argument("--sem-notificar", action="store_true", help="publica sem notificar os usuários")
     args = parser.parse_args()
 
+    from luftbase import __version__ as versao_luftbase
     from luftbase.conteudo import changelog_plataforma as nota
+
+    print(f"LuftBase instalado: {versao_luftbase}  (rode 'pip install -r requirements.txt' se estiver desatualizado)")
 
     print(f"Título : {nota.TITULO}")
     print(f"Versão : {args.versao} | global (sistema 0) | notificação: {'não' if args.sem_notificar else 'sim'}")
