@@ -1,72 +1,55 @@
-"""Rotas do menu principal do Hub Central.
-
-Este modulo concentra apenas a pagina inicial do Hub, mantendo as
-demais funcionalidades em blueprints especificos por dominio.
-"""
+"""Pagina inicial do Hub e catalogo de sistemas."""
 
 from __future__ import annotations
 
 import os
-from flask import Blueprint, current_app, redirect, render_template, url_for
-from flask_login import current_user, login_required
-from luftcore.extensions.seguranca_extension import require_permission
 
-from App.Services.Admin.SistemasHubService import ServicoSistemasHub
+from flask import Blueprint, current_app, render_template
+from flask_login import current_user, login_required
+from luftbase import PermissaoLuftBase, exigir_permissao, obter_luftbase
+
+from App.Services.SistemasHubService import SistemasHubService
 
 PrincipalBp = Blueprint("Principal", __name__)
 
 
-@PrincipalBp.route("/login", methods=["GET", "POST"])
-def Login():
-    return redirect(url_for("Autenticacao.login"))
-
-
-@PrincipalBp.route("/logout")
-def Logout():
-    return redirect(url_for("Autenticacao.logout"))
-
-
-@PrincipalBp.route("/")
+@PrincipalBp.get("/")
 @login_required
-@require_permission("HOME.VISUALIZAR")
-def MenuPrincipal():
-    """Renderiza a pagina inicial do Hub com os sistemas permitidos.
+@exigir_permissao(PermissaoLuftBase.INICIO_VISUALIZAR)
+def MenuPrincipal():  # type: ignore[no-untyped-def]
+    """Renderiza o Hub usando catalogo e publicacoes do PostgreSQL."""
 
-    Retorno:
-    Response: HTML do dashboard principal.
-    """
-    security_manager = current_app.extensions["luft_security"]
-    servico = ServicoSistemasHub(security_manager)
-    sistemas = servico.listarSistemasVisiveisParaUsuario(current_user)
-
-    imagens_hero = []
-    diretorio_imagens = os.path.join(current_app.root_path, "Static", "Img", "Background")
-    if os.path.isdir(diretorio_imagens):
-        extensoes_permitidas = {".png", ".jpg", ".jpeg", ".webp"}
-        imagens_hero = [
+    estado = obter_luftbase()
+    usuario = current_user._get_current_object()
+    sistemas = SistemasHubService(estado.bancos.core).listar_para_usuario(usuario)
+    diretorio_imagens = os.path.join(
+        current_app.root_path, "Static", "Img", "Background"
+    )
+    extensoes = {".png", ".jpg", ".jpeg", ".webp"}
+    imagens_hero = (
+        [
             arquivo
             for arquivo in sorted(os.listdir(diretorio_imagens))
-            if os.path.splitext(arquivo)[1].lower() in extensoes_permitidas
+            if os.path.splitext(arquivo)[1].lower() in extensoes
         ]
-
-    comunicados = []
-    try:
-        servico_publicacoes = current_app.extensions.get("luft_publicacoes")
-        if servico_publicacoes is not None:
-            id_usuario = int(str(current_user.get_id()).strip())
-            id_grupo = getattr(current_user, "codigo_usuariogrupo", None)
-            comunicados = servico_publicacoes.listar_para_usuario(
-                id_usuario=id_usuario,
-                id_grupo=int(id_grupo) if id_grupo is not None else None,
-                tipo_publicacao=None,
-                limite=4,
-            )
-    except Exception as erro:
-        current_app.logger.warning("Erro ao carregar avisos e comunicados do Hub: %s", str(erro))
+        if os.path.isdir(diretorio_imagens)
+        else []
+    )
+    pagina = estado.publicacoes.listar_para_usuario(
+        usuario.id_usuario,
+        usuario.id_grupo,
+        limite=4,
+    )
+    total_sistemas = len(sistemas)
+    total_operacionais = sum(1 for s in sistemas if not s.em_manutencao)
+    total_manutencao = sum(1 for s in sistemas if s.em_manutencao)
 
     return render_template(
         "Pages/HomeHub.html",
         sistemas=sistemas,
+        total_sistemas=total_sistemas,
+        total_operacionais=total_operacionais,
+        total_manutencao=total_manutencao,
         imagens_hero=imagens_hero,
-        comunicados=comunicados,
+        comunicados=pagina.itens,
     )

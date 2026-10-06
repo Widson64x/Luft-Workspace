@@ -1,28 +1,15 @@
-{% extends "luftcore/base.html" %}
-{% import 'luftcore/components.html' as ui %}
+{% extends "luftbase/base.html" %}
+{% import "luftbase/components.html" as ui %}
 
-{% block titulo %}
-{% block title %}Luft Workspace{% endblock %}
-{% endblock %}
+{% block titulo %}{% block title %}Luft Workspace{% endblock %}{% endblock %}
 
-{% block extra_head %}
-<link rel="stylesheet" href="{{ url_for('static', filename='Css/Hub.css') }}">
+{% block estilos %}
+<link rel="stylesheet" href="{{ url_for('static', filename='CSS/Hub.css') }}">
+{% block extra_head %}{% endblock %}
 {% endblock %}
 
 {% block sidebar_brand %}
-<div class="luft-logo">
-    <div class="luft-logo-icon-wrapper">
-        <img src="{{ url_for('luftcore.static', filename='icons/luft-logo-150x150-Dark.png') }}"
-            data-light="{{ url_for('luftcore.static', filename='icons/luft-logo-150x150-Dark.png') }}"
-            data-dark="{{ url_for('luftcore.static', filename='icons/luft-logo-150x150-Light.png') }}"
-            alt="Logo Luft Healthcare" class="luft-logo-img" style="width: 40px; height: 40px; object-fit: contain;">
-    </div>
-    <div class="luft-logo-text d-flex flex-col justify-content-center">
-        <span class="luft-logo-full font-black text-main" style="font-size: 15px; font-weight: 800; color: #0f172a; line-height: 1.15;">Luft Healthcare</span>
-        <span class="luft-logo-full text-xs" style="font-size: 11px; font-weight: 700; color: #1d63d8; letter-spacing: 0.08em; text-transform: uppercase; line-height: 1.2; margin-top: 2px;">LUFT-WORKSPACE</span>
-        <span class="luft-logo-mini font-black">L<span class="text-main">H</span></span>
-    </div>
-</div>
+{{ ui.sidebar_brand('LUFT-WORKSPACE', 'H') }}
 {% endblock %}
 
 {% block sidebar_menu %}
@@ -31,24 +18,18 @@
 {% set sub_req = request.args.get('sub', '') %}
 
 {% set hub_ativo = endpoint_atual == 'Principal.MenuPrincipal' %}
-{% set painel_controle_ativo = endpoint_atual.startswith('Configuracoes.') or endpoint_atual.startswith('Seguranca.') or endpoint_atual.startswith('Admin.') or endpoint_atual.startswith('LuftPublicacoes.painel_') %}
+{% set painel_controle_ativo = endpoint_atual.startswith('Configuracoes.') or endpoint_atual.startswith('Seguranca.') or endpoint_atual.startswith('Admin.') or endpoint_atual.startswith('Publicacoes.painel_') or endpoint_atual.startswith('LuftPublicacoes.painel_') %}
 
 {# Agrupador 1: Hub de Sistemas #}
 {% call ui.nav_item('Hub de Sistemas', icone='ph-bold ph-squares-four', ativo=hub_ativo) %}
     {{ ui.nav_item('Visão Geral', icone='ph-fill ph-house', href=url_for('Principal.MenuPrincipal'), ativo=(endpoint_atual == 'Principal.MenuPrincipal')) }}
-    {% for sistema in SistemasMenu %}
+    {% for sistema in sistemas_menu %}
         {% set icone_sistema = sistema.icone or 'ph-bold ph-app-window' %}
-        {# Ajustes visuais por sistema #}
-        {% if 'Docs' in sistema.nomeSistema %}
-            {% set icone_sistema = 'ph-bold ph-file-text' %}
-        {% elif 'Control' in sistema.nomeSistema and sistema.emManutencao %}
-            {% set icone_sistema = 'ph-bold ph-lock-key' %}
-        {% endif %}
         {% set destino_sistema = url_for('Principal.MenuPrincipal') if 'ph-house' in icone_sistema else sistema.link %}
-        {% if sistema.emManutencao %}
-            {{ ui.nav_item(sistema.nomeSistema, icone=icone_sistema, href='#', ativo=False, badge='indisponível') }}
+        {% if sistema.em_manutencao %}
+            {{ ui.nav_item(sistema.nome, icone=icone_sistema, href='#', ativo=False, badge='indisponível') }}
         {% else %}
-            {{ ui.nav_item(sistema.nomeSistema, icone=icone_sistema, href=(destino_sistema or '#'), ativo=False) }}
+            {{ ui.nav_item(sistema.nome, icone=icone_sistema, href=(destino_sistema or '#'), ativo=False) }}
         {% endif %}
     {% endfor %}
 {% endcall %}
@@ -71,7 +52,7 @@
     {% endif %}
 
     {% if pode_ver_comunicados or pode_ver_atualizacoes %}
-    {% call ui.nav_item('Comunicação', icone='ph-bold ph-megaphone', ativo=(aba_req == 'tab-publicacoes' or endpoint_atual.startswith('LuftPublicacoes.painel_')), data_tab='tab-publicacoes') %}
+    {% call ui.nav_item('Comunicação', icone='ph-bold ph-megaphone', ativo=(aba_req == 'tab-publicacoes' or endpoint_atual.startswith('Publicacoes.painel_') or endpoint_atual.startswith('LuftPublicacoes.painel_')), data_tab='tab-publicacoes') %}
         {% if pode_ver_comunicados %}
         {{ ui.nav_item('Comunicados', icone='ph-bold ph-megaphone-simple', href=url_for('LuftPublicacoes.painel_comunicados'), ativo=(endpoint_atual == 'LuftPublicacoes.painel_comunicados')) }}
         {% endif %}
@@ -81,52 +62,43 @@
     {% endcall %}
     {% endif %}
 
-    {% if pode_ver_ambiente or pode_editar_ambiente %}
+    {% if pode_ver_auditoria %}
+    {{ ui.nav_item('Auditoria & Análise', icone='ph-bold ph-file-magnifying-glass', href=url_for('Configuracoes.visualizar_painel', tab='tab-auditoria'), ativo=(aba_req == 'tab-auditoria'), data_tab='tab-auditoria') }}
+    {% endif %}
+
+    {% if pode_ver_configuracoes %}
     {{ ui.nav_item('Configurações Gerais', icone='ph-bold ph-gear', href=url_for('Configuracoes.visualizar_painel', tab='tab-configuracoes'), ativo=(aba_req == 'tab-configuracoes'), data_tab='tab-configuracoes') }}
     {% endif %}
 {% endcall %}
 {% endif %}
 
-{# Ponto de Acesso Centralizado às ChangeLogs de todo o ecossistema #}
+{# Ponto de Acesso Centralizado a Comunicados e ChangeLogs de todo o ecossistema #}
+{{ ui.nav_item('Comunicados', icone='ph-bold ph-megaphone', href=url_for('LuftPublicacoes.listar_comunicados'), ativo=(endpoint_atual == 'LuftPublicacoes.listar_comunicados')) }}
 {{ ui.nav_item('Notas de Atualização', icone='ph-bold ph-rocket-launch', href=url_for('LuftPublicacoes.listar_atualizacoes'), ativo=(endpoint_atual == 'LuftPublicacoes.listar_atualizacoes'), badge='ChangeLog') }}
 {% endblock %}
 
-{% block sidebar_user %}
-{% set usuario_nome = current_user.nome if (current_user.is_authenticated and current_user.nome) else 'widson.araujo' %}
-{% set usuario_grupo = current_user.nome_grupo if (current_user.is_authenticated and current_user.nome_grupo) else 'GRUPO TI' %}
-{% set usuario_iniciais = 'WI' if 'widson' in usuario_nome.lower() else (usuario_nome[:2]|upper) %}
-
-<div class="luft-user hover-lift" title="Perfil do Usuário">
-    <div class="luft-avatar shadow-sm">
-        <span>{{ usuario_iniciais }}</span>
-    </div>
-    <div class="luft-user-info">
-        <span class="luft-user-name">{{ usuario_nome }}</span>
-        <span class="luft-user-role">{{ usuario_grupo }}</span>
-    </div>
-    <i class="ph-bold ph-caret-right luft-user-chevron"></i>
-</div>
-{% endblock %}
-
 {% block sidebar_actions %}
-<button type="button" onclick="LuftCore.alternarTema()" class="luft-btn-action hover-lift" title="Alternar tema">
-    <i class="ph-bold ph-moon"></i>
-    <span>Tema</span>
+<button type="button" onclick="LuftBase.alternarModo()" class="luft-btn-action hover-lift{{ ' luft-btn-action--bloqueado' if luft_modo_bloqueado else '' }}" data-luft-alternar-modo{{ ' aria-disabled="true"'|safe if luft_modo_bloqueado else '' }} title="Alternar entre modo claro e escuro">
+    <i class="ph-bold {{ 'ph-sun' if luft_modo_tema == 'escuro' else 'ph-moon' }}"></i>
+    <span>Modo</span>
 </button>
 {% if pode_ver_painel %}
-<a href="{{ url_for('Configuracoes.visualizar_painel') }}" class="luft-btn-action hover-lift" title="Painel de Controle">
+<a href="{{ url_for('Configuracoes.visualizar_painel') }}" class="luft-btn-action hover-lift" title="Painel de Controle / Configurações">
     <i class="ph-bold ph-gear"></i>
-    <span>Configurações</span>
+    <span>Config.</span>
 </a>
 {% endif %}
-<a href="{{ url_for('Autenticacao.logout') }}" class="luft-btn-action hover-lift text-danger" title="Sair do sistema">
-    <i class="ph-bold ph-power"></i>
-    <span>Sair</span>
-</a>
+<form method="post" action="{{ url_for('Autenticacao.logout') }}" style="display:contents;">
+    <input type="hidden" name="csrf_token" value="{{ luft_csrf_token }}">
+    <button type="submit" class="luft-btn-action hover-lift text-danger" title="Sair do sistema">
+        <i class="ph-bold ph-power"></i>
+        <span>Sair</span>
+    </button>
+</form>
 {% endblock %}
 
 {% block nome_usuario %}
-{{ current_user.nome if current_user.is_authenticated else 'widson.araujo' }}
+{{ current_user.login if current_user.is_authenticated else 'Usuário' }}
 {% endblock %}
 
 {% block content %}

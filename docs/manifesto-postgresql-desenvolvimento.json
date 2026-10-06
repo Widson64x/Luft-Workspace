@@ -1,0 +1,43 @@
+{
+  "ambiente": "desenvolvimento",
+  "conexao": {
+    "alias": "luft-web",
+    "host": "172.19.85.111",
+    "porta": 5432,
+    "nome_banco": "luft_web",
+    "tipo_banco": "postgresql",
+    "sslmode": "prefer"
+  },
+  "aplicacoes": [
+    {
+      "sistema_id": 0,
+      "identificador": "luft-workspace",
+      "esquema": "workspace",
+      "usuario": "luft_workspace_app"
+    },
+    {
+      "sistema_id": 1,
+      "identificador": "luft-connectair",
+      "esquema": "connectair",
+      "usuario": "luft_connectair_app"
+    },
+    {
+      "sistema_id": 2,
+      "identificador": "luft-control",
+      "esquema": "control",
+      "usuario": "luft_control_app"
+    },
+    {
+      "sistema_id": 3,
+      "identificador": "luft-integrador",
+      "esquema": "integrador",
+      "usuario": "luft_integrador_app"
+    },
+    {
+      "sistema_id": 5,
+      "identificador": "luft-docs",
+      "esquema": "docs",
+      "usuario": "luft_docs_app"
+    }
+  ]
+}

@@ -1,19 +1,9 @@
-"""Entrypoint de desenvolvimento do Hub Central."""
+"""Desenvolvimento do Luft-Workspace: `python App.py` (depurador e recarga automatica).
 
-from __future__ import annotations
+Em producao use o Wsgi.py. Host e porta vem do .env (HOST/PORT ou LUFT_SERVIDOR_*).
+"""
 
-import os
-
-from dotenv import load_dotenv
-
-from App import CriarApp
-
-load_dotenv()
-
-app = CriarApp()
+from luftbase.servidor import executar_desenvolvimento
 
 if __name__ == "__main__":
-    host = os.getenv("HOST", "127.0.0.1")
-    porta = int(os.getenv("PORT", "9010"))
-    debug = os.getenv("APP_ENV", "development").strip().lower() != "production"
-    app.run(host=host, port=porta, debug=debug)
+    executar_desenvolvimento("App:CriarApp")
