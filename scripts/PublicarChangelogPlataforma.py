@@ -47,7 +47,7 @@ def main():
             notificar=not args.sem_notificar,
             publicar=not args.rascunho,
         )
-    rotulos = {"criada": "criada", "atualizada": "rascunho atualizado", "ja_publicada": "já estava publicada"}
+    rotulos = {"criada": "criada", "atualizada": "rascunho atualizado", "texto_corrigido": "já publicada: texto atualizado (sem nova notificação)", "ja_publicada": "já publicada e com o texto atual"}
     print(f"\nNota #{resultado.id_publicacao}: {rotulos[resultado.acao]}"
           f"{' e publicada' if resultado.publicada and resultado.acao != 'ja_publicada' else ''}.")
     return 0
